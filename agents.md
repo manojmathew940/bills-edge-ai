@@ -5,10 +5,11 @@ This repository contains the "Bills AI Analyst" project.
 
 The goal is to build an AI-assisted system that analyzes Buffalo Bills games and explains outcomes (wins/losses) using structured data, reasoning, and clear, ranked explanations.
 
-This project is intended to be:
-- A learning platform for AI development (RAG, agents, backend systems)
-- A portfolio-quality project demonstrating practical AI system design
-- A clean, well-structured Python backend application
+The AI-assisted system will:
+•	Answer questions like: Why did the Bills lose this game? What changed after halftime? Which three factors mattered most? Which drives and plays support that claim?
+•	Return structured evidence rather than just prose: ranked reasons, supporting metrics, key drives, key plays, charts, and retrieved recap snippets.
+•	Allow drilldown from season to game to drive to play, so the user can inspect the evidence rather than trust a black-box answer.
+
 
 ---
 
@@ -51,6 +52,13 @@ Avoid introducing new technologies unless necessary.
 - `docs/` → documentation and design notes
 
 Keep structure flat and easy to understand.
+
+Before implementing meaningful new code, agents should first review:
+
+- `docs/roadmap.md` for project direction and sequencing
+- `docs/data_schema.md` for the intended analytics dataset contract
+
+If code and docs diverge, agents should use judgment, verify the current codebase, and update documentation when appropriate.
 
 ---
 
