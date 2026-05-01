@@ -79,3 +79,27 @@ Get deterministic game metrics for a Bills game:
 ```bash
 curl http://localhost:8000/games/2024/1/metrics
 ```
+
+## Ask A Game Question
+
+The first LLM slice answers questions from the deterministic metric packet only. It does not use play-level evidence, web search, injury reports, articles, quotes, or retrieval context.
+
+Set your OpenAI API key:
+
+```bash
+export OPENAI_API_KEY="your_api_key"
+```
+
+Or create a local `.env` file:
+
+```text
+OPENAI_API_KEY=your_api_key
+```
+
+Ask a question:
+
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"season":2024,"week":1,"question":"Why did the Bills beat the Cardinals?"}'
+```
