@@ -51,3 +51,17 @@ data/raw/bills_play_by_play_2024_raw.metadata.json
 ```
 
 The raw data is intentionally saved before normalization so the source columns can be inspected before deciding the analysis-ready schema mapping. The ingestion script validates the season range, checks required nflverse columns, limits the compressed source size, and only writes into `data/raw/`.
+
+## Processed Play Data
+
+Create the first curated play-level dataset for a season:
+
+```bash
+python3 app/data_cleaning.py 2024
+```
+
+This reads the raw Bills play-by-play file and writes:
+
+```text
+data/processed/bills_plays_2024.parquet
+```
