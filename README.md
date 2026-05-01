@@ -65,3 +65,17 @@ This reads the raw Bills play-by-play file and writes:
 ```text
 data/processed/bills_plays_2024.parquet
 ```
+
+## Game Metrics
+
+Start the API:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Get deterministic game metrics for a Bills game:
+
+```bash
+curl http://localhost:8000/games/2024/1/metrics
+```
