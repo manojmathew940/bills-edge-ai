@@ -23,6 +23,14 @@ Deliverables:
 - save cleaned outputs in Parquet
 - document the dataset schema
 
+Analysis-ready dataset grains:
+
+- `bills_plays_<season>.parquet`: atomic play-level source of truth
+- `bills_drives_<season>.parquet`: possession-level outcomes and context
+- `bills_quarter_summaries_<season>.parquet`: quarter-level scoring, efficiency, and momentum summaries
+- `bills_game_summaries_<season>.parquet`: game-level metrics for post-game analysis
+- `bills_season_summaries.parquet`: season-level trends and comparisons
+
 Key outcome:
 A stable analysis-ready dataset that can be reused by later analytics logic.
 

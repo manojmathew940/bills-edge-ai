@@ -24,7 +24,6 @@ One row represents one play from a Buffalo Bills game.
 - `week`: regular season or playoff week identifier
 - `game_id`: unique game identifier
 - `game_date`: date of the game
-- `team`: always `BUF` for Bills-perspective records
 - `opponent`: opposing team abbreviation
 - `is_home`: boolean flag indicating whether Buffalo was the home team
 - `result`: game result from the Bills perspective, such as `win` or `loss`

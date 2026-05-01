@@ -58,6 +58,8 @@ Before implementing meaningful new code, agents should first review:
 - `docs/roadmap.md` for project direction and sequencing
 - `docs/data_schema.md` for the intended analytics dataset contract
 
+Before editing files, agents should provide an overview of the changes and get the go ahead.
+
 If code and docs diverge, agents should use judgment, verify the current codebase, and update documentation when appropriate.
 
 ---

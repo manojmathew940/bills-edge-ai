@@ -29,3 +29,25 @@ Future extensions may include:
 ## Current Status
 
 The repo is currently an early FastAPI scaffold with a basic application entry point in `app/main.py`.
+
+## Raw Data Ingestion
+
+Download raw Bills play-by-play rows for one season:
+
+```bash
+python3 app/data_ingestion.py 2024
+```
+
+This saves the filtered raw source columns to:
+
+```text
+data/raw/bills_play_by_play_2024_raw.csv.gz
+```
+
+The script also writes a metadata file next to the raw data:
+
+```text
+data/raw/bills_play_by_play_2024_raw.metadata.json
+```
+
+The raw data is intentionally saved before normalization so the source columns can be inspected before deciding the analysis-ready schema mapping. The ingestion script validates the season range, checks required nflverse columns, limits the compressed source size, and only writes into `data/raw/`.
