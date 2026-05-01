@@ -35,7 +35,7 @@ The repo is currently an early FastAPI scaffold with a basic application entry p
 Download raw Bills play-by-play rows for one season:
 
 ```bash
-python3 app/data_ingestion.py 2024
+python3 -m app.data_foundation.ingestion 2024
 ```
 
 This saves the filtered raw source columns to:
@@ -57,7 +57,7 @@ The raw data is intentionally saved before normalization so the source columns c
 Create the first curated play-level dataset for a season:
 
 ```bash
-python3 app/data_cleaning.py 2024
+python3 -m app.data_foundation.cleaning 2024
 ```
 
 This reads the raw Bills play-by-play file and writes:
