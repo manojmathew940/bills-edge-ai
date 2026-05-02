@@ -1,5 +1,9 @@
+import os
+
 from pydantic import BaseModel, Field
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.analytics.game_metrics import (
     calculate_game_metrics,
@@ -9,6 +13,7 @@ from app.llm.answering import (
     LLMConfigurationError,
     LLMServiceError,
     answer_game_question,
+    render_debug_prompt,
 )
 
 
@@ -17,12 +22,18 @@ class AskRequest(BaseModel):
     week: int
     question: str = Field(min_length=1)
 
+
+def is_prompt_debug_enabled() -> bool:
+    return os.getenv("BILLS_AI_DEBUG_PROMPT", "").lower() in {"1", "true", "yes", "on"}
+
+
 app = FastAPI(title="Bills AI Analyst")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
 @app.get("/")
 def root():
-    return {"message": "Bills AI Analyst is running"}
+    return FileResponse("app/static/index.html")
 
 
 @app.get("/games/{season}/{week}/metrics")
@@ -47,12 +58,24 @@ def ask(request: AskRequest):
         raise HTTPException(status_code=404, detail=str(error)) from error
 
     metrics = calculate_game_metrics(game)
+    debug_prompt = (
+        render_debug_prompt(request.question, metrics)
+        if is_prompt_debug_enabled()
+        else None
+    )
 
     try:
         answer = answer_game_question(request.question, metrics)
     except LLMConfigurationError as error:
-        raise HTTPException(status_code=503, detail=str(error)) from error
+        detail = {"error": str(error), "debug_prompt": debug_prompt} if debug_prompt else str(error)
+        raise HTTPException(status_code=503, detail=detail) from error
     except LLMServiceError as error:
-        raise HTTPException(status_code=503, detail=str(error)) from error
+        detail = {"error": str(error), "debug_prompt": debug_prompt} if debug_prompt else str(error)
+        raise HTTPException(status_code=503, detail=detail) from error
 
-    return {"answer": answer, "metrics": metrics}
+    response = {"answer": answer, "metrics": metrics}
+
+    if debug_prompt:
+        response["debug_prompt"] = debug_prompt
+
+    return response

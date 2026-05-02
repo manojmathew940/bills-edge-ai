@@ -66,3 +66,12 @@ def render_prompt(question: str, metrics: dict[str, Any]) -> str:
         "Game metrics JSON:\n"
         f"{metrics_json}"
     )
+
+
+def render_debug_prompt(question: str, metrics: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "model": DEFAULT_MODEL,
+        "instructions": INSTRUCTIONS,
+        "input": render_prompt(question, metrics),
+        "max_output_tokens": MAX_OUTPUT_TOKENS,
+    }

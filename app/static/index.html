@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bills AI Analyst</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="workspace" aria-labelledby="app-title">
+        <header class="masthead">
+          <div>
+            <p class="eyebrow">Internal testing UI</p>
+            <h1 id="app-title">Bills AI Analyst</h1>
+          </div>
+          <span class="status-pill">Local</span>
+        </header>
+
+        <form id="ask-form" class="ask-form">
+          <div class="field-row">
+            <label class="field">
+              <span>Season</span>
+              <input id="season" name="season" type="number" min="1999" max="2100" value="2024" required>
+            </label>
+
+            <label class="field">
+              <span>Week</span>
+              <input id="week" name="week" type="number" min="1" max="22" value="1" required>
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Question</span>
+            <textarea id="question" name="question" rows="5" required>Why did the Bills beat the Cardinals?</textarea>
+          </label>
+
+          <div class="actions">
+            <button id="ask-button" type="submit">Ask</button>
+            <p id="loading" class="loading" hidden>Asking the model...</p>
+          </div>
+        </form>
+
+        <div id="error" class="message error" role="alert" hidden></div>
+
+        <section class="result" aria-labelledby="answer-title">
+          <h2 id="answer-title">Answer</h2>
+          <div id="answer" class="answer empty">Ask a question to see the answer here.</div>
+        </section>
+
+        <details class="metrics-panel">
+          <summary>Metrics JSON</summary>
+          <pre id="metrics">{}</pre>
+        </details>
+
+        <details id="debug-panel" class="debug-panel" hidden>
+          <summary>LLM Debug Prompt</summary>
+          <pre id="debug-prompt">{}</pre>
+        </details>
+      </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
