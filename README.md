@@ -84,6 +84,10 @@ curl http://localhost:8000/games/2024/1/metrics
 
 The first LLM slice answers questions from the deterministic metric packet only. It does not use play-level evidence, web search, injury reports, articles, quotes, or retrieval context.
 
+### OpenAI
+
+By default, the app uses OpenAI with `gpt-5.5`.
+
 Set your OpenAI API key:
 
 ```bash
@@ -95,6 +99,36 @@ Or create a local `.env` file:
 ```text
 OPENAI_API_KEY=your_api_key
 ```
+
+Optionally override the model:
+
+```text
+LLM_MODEL=gpt-5.5
+```
+
+### Ollama
+
+Install Ollama, download a local model, and start the local server:
+
+```bash
+ollama run qwen3:4b
+```
+
+Exit the Ollama chat with `/bye`, then make sure the Ollama server is running:
+
+```bash
+ollama serve
+```
+
+Configure the app to call Ollama's OpenAI-compatible local endpoint:
+
+```text
+LLM_BASE_URL=http://localhost:11434/v1
+LLM_MODEL=qwen3:4b
+LLM_API_KEY=ollama
+```
+
+`LLM_API_KEY` is a placeholder for Ollama. The local server does not require a real API key, but the OpenAI client expects one.
 
 Ask a question:
 
