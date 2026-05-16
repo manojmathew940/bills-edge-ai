@@ -106,6 +106,17 @@ Optionally override the model:
 LLM_MODEL=gpt-5.5
 ```
 
+The internal UI can switch between both providers per request. For that mode,
+configure OpenAI and local settings side by side:
+
+```text
+OPENAI_API_KEY=your_api_key
+OPENAI_LLM_MODEL=gpt-5.5
+LOCAL_LLM_BASE_URL=http://localhost:11434/v1
+LOCAL_LLM_MODEL=qwen3:4b
+LOCAL_LLM_API_KEY=ollama
+```
+
 ### Ollama
 
 Install Ollama, download a local model, and start the local server:
@@ -127,6 +138,10 @@ LLM_BASE_URL=http://localhost:11434/v1
 LLM_MODEL=qwen3:4b
 LLM_API_KEY=ollama
 ```
+
+The older `LLM_*` variables still work as a single-provider configuration, but
+the provider toggle prefers the `OPENAI_*` and `LOCAL_LLM_*` variables above so
+both providers can stay configured at once.
 
 `LLM_API_KEY` is a placeholder for Ollama. The local server does not require a real API key, but the OpenAI client expects one.
 

@@ -32,6 +32,32 @@ textarea {
   font: inherit;
 }
 
+.provider-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-muted);
+  padding: 12px;
+}
+
+.provider-toggle span {
+  display: grid;
+  gap: 2px;
+}
+
+.provider-toggle small {
+  color: var(--muted);
+}
+
+.provider-toggle input {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+}
+
 .shell {
   width: min(960px, calc(100% - 32px));
   margin: 0 auto;

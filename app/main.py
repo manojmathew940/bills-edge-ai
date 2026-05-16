@@ -21,6 +21,7 @@ class AskRequest(BaseModel):
     season: int
     week: int
     question: str = Field(min_length=1)
+    provider: str = Field(default="local", pattern="^(openai|local)$")
 
 
 def is_prompt_debug_enabled() -> bool:
@@ -59,13 +60,13 @@ def ask(request: AskRequest):
 
     metrics = calculate_game_metrics(game)
     debug_prompt = (
-        render_debug_prompt(request.question, metrics)
+        render_debug_prompt(request.question, metrics, provider=request.provider)
         if is_prompt_debug_enabled()
         else None
     )
 
     try:
-        answer = answer_game_question(request.question, metrics)
+        answer = answer_game_question(request.question, metrics, provider=request.provider)
     except LLMConfigurationError as error:
         detail = {"error": str(error), "debug_prompt": debug_prompt} if debug_prompt else str(error)
         raise HTTPException(status_code=503, detail=detail) from error
@@ -73,7 +74,7 @@ def ask(request: AskRequest):
         detail = {"error": str(error), "debug_prompt": debug_prompt} if debug_prompt else str(error)
         raise HTTPException(status_code=503, detail=detail) from error
 
-    response = {"answer": answer, "metrics": metrics}
+    response = {"answer": answer, "metrics": metrics, "provider": request.provider}
 
     if debug_prompt:
         response["debug_prompt"] = debug_prompt

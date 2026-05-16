@@ -6,6 +6,8 @@ const answerBox = document.querySelector("#answer");
 const metricsBox = document.querySelector("#metrics");
 const debugPanel = document.querySelector("#debug-panel");
 const debugPromptBox = document.querySelector("#debug-prompt");
+const useOpenAIInput = document.querySelector("#use-openai");
+const providerStatus = document.querySelector("#provider-status");
 
 function setLoading(isLoading) {
   askButton.disabled = isLoading;
@@ -30,6 +32,14 @@ function setDebugPrompt(debugPrompt) {
     debugPromptBox.textContent = "{}";
     debugPanel.hidden = true;
   }
+}
+
+function getSelectedProvider() {
+  return useOpenAIInput.checked ? "openai" : "local";
+}
+
+function setProviderStatus(provider) {
+  providerStatus.textContent = provider === "openai" ? "OpenAI" : "Local";
 }
 
 function escapeHtml(value) {
@@ -107,6 +117,7 @@ form.addEventListener("submit", async (event) => {
     season: Number(formData.get("season")),
     week: Number(formData.get("week")),
     question: String(formData.get("question")).trim(),
+    provider: getSelectedProvider(),
   };
 
   answerBox.textContent = "";
@@ -117,6 +128,7 @@ form.addEventListener("submit", async (event) => {
     renderAnswer(data.answer);
     metricsBox.textContent = JSON.stringify(data.metrics || {}, null, 2);
     setDebugPrompt(data.debug_prompt);
+    setProviderStatus(data.provider || payload.provider);
   } catch (error) {
     answerBox.textContent = "The answer will appear here after a successful request.";
     answerBox.classList.add("empty");
@@ -125,4 +137,8 @@ form.addEventListener("submit", async (event) => {
   } finally {
     setLoading(false);
   }
+});
+
+useOpenAIInput.addEventListener("change", () => {
+  setProviderStatus(getSelectedProvider());
 });
