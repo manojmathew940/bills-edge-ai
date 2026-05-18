@@ -214,3 +214,16 @@ curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
   -d '{"season":2024,"week":1,"question":"Why did the Bills beat the Cardinals?"}'
 ```
+
+### Inspect the exact LLM prompt
+
+To include the rendered prompt in `/ask` responses and show it in the browser UI,
+start the app with debug prompts enabled:
+
+```bash
+BILLS_AI_DEBUG_PROMPT=1 uvicorn app.main:app --reload
+```
+
+Then ask a question in the UI and expand **LLM Debug Prompt** beneath the metrics
+panel. The `/ask` JSON response will also include a `debug_prompt` object with
+the selected provider, model, instructions, rendered input, and token limit.
