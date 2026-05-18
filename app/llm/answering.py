@@ -90,10 +90,8 @@ def answer_game_question(
     metrics: dict[str, Any],
     *,
     provider: str | None = None,
-    load_env: bool = True,
 ) -> str:
-    if load_env:
-        load_dotenv()
+    load_dotenv()
 
     client = build_llm_client(provider)
     prompt = render_prompt(question, metrics)
@@ -126,10 +124,8 @@ def render_debug_prompt(
     metrics: dict[str, Any],
     *,
     provider: str | None = None,
-    load_env: bool = True,
 ) -> dict[str, Any]:
-    if load_env:
-        load_dotenv()
+    load_dotenv()
 
     return {
         "provider": provider or ("local" if get_llm_base_url() else "openai"),

@@ -145,6 +145,68 @@ both providers can stay configured at once.
 
 `LLM_API_KEY` is a placeholder for Ollama. The local server does not require a real API key, but the OpenAI client expects one.
 
+#### Ollama on Windows, app in WSL
+
+If Ollama runs on Windows while this FastAPI app runs inside WSL, the most
+stable setup is to make WSL and Windows share `localhost` through WSL mirrored
+networking. That lets this project keep using:
+
+```text
+LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
+```
+
+One-time Windows setup:
+
+1. Create or edit `%UserProfile%\.wslconfig`:
+
+   ```ini
+   [wsl2]
+   networkingMode=mirrored
+   ```
+
+2. Restart WSL from PowerShell:
+
+   ```powershell
+   wsl --shutdown
+   ```
+
+3. Start Ollama from the Windows Start menu and keep the project-local values
+   in `.env`:
+
+   ```text
+   LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
+   LOCAL_LLM_MODEL=qwen3:4b
+   LOCAL_LLM_API_KEY=ollama
+   ```
+
+After that, the app loads `.env` automatically and no per-session export
+commands are required.
+
+If mirrored networking is unavailable on your Windows version, use WSL's
+default NAT mode instead:
+
+1. On Windows, set a persistent user environment variable:
+
+   ```text
+   OLLAMA_HOST=0.0.0.0:11434
+   ```
+
+2. Quit and restart the Ollama Windows app.
+3. From WSL, get the Windows host IP with:
+
+   ```bash
+   ip route show | grep -i default | awk '{ print $3 }'
+   ```
+
+4. Put that IP into `.env`, for example:
+
+   ```text
+   LOCAL_LLM_BASE_URL=http://172.30.96.1:11434/v1
+   ```
+
+Mirrored networking is preferred because the NAT-mode host IP can change after
+WSL restarts.
+
 Ask a question:
 
 ```bash
