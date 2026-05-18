@@ -10,8 +10,8 @@ from openai import OpenAI, OpenAIError
 
 DEFAULT_MODEL = "gpt-5.5"
 DEFAULT_API_KEY = "ollama"
-DEFAULT_LOCAL_BASE_URL = "http://localhost:11434/v1"
-DEFAULT_LOCAL_MODEL = "qwen3:4b"
+DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:11434/v1"
+DEFAULT_LOCAL_MODEL = "qwen2.5:7b-instruct"
 MAX_OUTPUT_TOKENS = 900
 
 INSTRUCTIONS = """

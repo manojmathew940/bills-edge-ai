@@ -112,8 +112,8 @@ configure OpenAI and local settings side by side:
 ```text
 OPENAI_API_KEY=your_api_key
 OPENAI_LLM_MODEL=gpt-5.5
-LOCAL_LLM_BASE_URL=http://localhost:11434/v1
-LOCAL_LLM_MODEL=qwen3:4b
+LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
+LOCAL_LLM_MODEL=qwen2.5:7b-instruct
 LOCAL_LLM_API_KEY=ollama
 ```
 
@@ -122,7 +122,7 @@ LOCAL_LLM_API_KEY=ollama
 Install Ollama, download a local model, and start the local server:
 
 ```bash
-ollama run qwen3:4b
+ollama run qwen2.5:7b-instruct
 ```
 
 Exit the Ollama chat with `/bye`, then make sure the Ollama server is running:
@@ -134,8 +134,8 @@ ollama serve
 Configure the app to call Ollama's OpenAI-compatible local endpoint:
 
 ```text
-LLM_BASE_URL=http://localhost:11434/v1
-LLM_MODEL=qwen3:4b
+LLM_BASE_URL=http://127.0.0.1:11434/v1
+LLM_MODEL=qwen2.5:7b-instruct
 LLM_API_KEY=ollama
 ```
 
@@ -175,7 +175,7 @@ One-time Windows setup:
 
    ```text
    LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
-   LOCAL_LLM_MODEL=qwen3:4b
+   LOCAL_LLM_MODEL=qwen2.5:7b-instruct
    LOCAL_LLM_API_KEY=ollama
    ```
 
