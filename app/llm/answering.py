@@ -10,6 +10,8 @@ from openai import OpenAI, OpenAIError
 
 DEFAULT_MODEL = "gpt-5.5"
 DEFAULT_API_KEY = "ollama"
+DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:11434/v1"
+DEFAULT_LOCAL_MODEL = "qwen2.5:7b-instruct"
 MAX_OUTPUT_TOKENS = 900
 
 INSTRUCTIONS = """
@@ -33,24 +35,42 @@ class LLMServiceError(RuntimeError):
     """Raised when the LLM provider call fails."""
 
 
-def get_llm_model() -> str:
+def get_llm_model(provider: str | None = None) -> str:
+    if provider == "local":
+        return os.getenv("LOCAL_LLM_MODEL") or os.getenv("LLM_MODEL") or DEFAULT_LOCAL_MODEL
+
+    if provider == "openai":
+        return os.getenv("OPENAI_LLM_MODEL") or DEFAULT_MODEL
+
     return os.getenv("LLM_MODEL", DEFAULT_MODEL)
 
 
-def get_llm_base_url() -> str | None:
+def get_llm_base_url(provider: str | None = None) -> str | None:
+    if provider == "local":
+        return os.getenv("LOCAL_LLM_BASE_URL") or os.getenv("LLM_BASE_URL") or DEFAULT_LOCAL_BASE_URL
+
+    if provider == "openai":
+        return None
+
     return os.getenv("LLM_BASE_URL") or None
 
 
-def get_llm_api_key() -> str | None:
+def get_llm_api_key(provider: str | None = None) -> str | None:
+    if provider == "local":
+        return os.getenv("LOCAL_LLM_API_KEY") or os.getenv("LLM_API_KEY") or DEFAULT_API_KEY
+
+    if provider == "openai":
+        return os.getenv("OPENAI_API_KEY")
+
     if get_llm_base_url():
         return os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY") or DEFAULT_API_KEY
 
     return os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
 
 
-def build_llm_client() -> OpenAI:
-    api_key = get_llm_api_key()
-    base_url = get_llm_base_url()
+def build_llm_client(provider: str | None = None) -> OpenAI:
+    api_key = get_llm_api_key(provider)
+    base_url = get_llm_base_url(provider)
 
     if not api_key:
         raise LLMConfigurationError(
@@ -66,14 +86,16 @@ def build_llm_client() -> OpenAI:
 
 
 def answer_game_question(
-    question: str, metrics: dict[str, Any], *, load_env: bool = True
+    question: str,
+    metrics: dict[str, Any],
+    *,
+    provider: str | None = None,
 ) -> str:
-    if load_env:
-        load_dotenv()
+    load_dotenv()
 
-    client = build_llm_client()
+    client = build_llm_client(provider)
     prompt = render_prompt(question, metrics)
-    model = get_llm_model()
+    model = get_llm_model(provider)
 
     try:
         response = client.responses.create(
@@ -98,14 +120,17 @@ def render_prompt(question: str, metrics: dict[str, Any]) -> str:
 
 
 def render_debug_prompt(
-    question: str, metrics: dict[str, Any], *, load_env: bool = True
+    question: str,
+    metrics: dict[str, Any],
+    *,
+    provider: str | None = None,
 ) -> dict[str, Any]:
-    if load_env:
-        load_dotenv()
+    load_dotenv()
 
     return {
-        "model": get_llm_model(),
-        "base_url": get_llm_base_url(),
+        "provider": provider or ("local" if get_llm_base_url() else "openai"),
+        "model": get_llm_model(provider),
+        "base_url": get_llm_base_url(provider),
         "instructions": INSTRUCTIONS,
         "input": render_prompt(question, metrics),
         "max_output_tokens": MAX_OUTPUT_TOKENS,

@@ -106,12 +106,23 @@ Optionally override the model:
 LLM_MODEL=gpt-5.5
 ```
 
+The internal UI can switch between both providers per request. For that mode,
+configure OpenAI and local settings side by side:
+
+```text
+OPENAI_API_KEY=your_api_key
+OPENAI_LLM_MODEL=gpt-5.5
+LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
+LOCAL_LLM_MODEL=qwen2.5:7b-instruct
+LOCAL_LLM_API_KEY=ollama
+```
+
 ### Ollama
 
 Install Ollama, download a local model, and start the local server:
 
 ```bash
-ollama run qwen3:4b
+ollama run qwen2.5:7b-instruct
 ```
 
 Exit the Ollama chat with `/bye`, then make sure the Ollama server is running:
@@ -123,12 +134,78 @@ ollama serve
 Configure the app to call Ollama's OpenAI-compatible local endpoint:
 
 ```text
-LLM_BASE_URL=http://localhost:11434/v1
-LLM_MODEL=qwen3:4b
+LLM_BASE_URL=http://127.0.0.1:11434/v1
+LLM_MODEL=qwen2.5:7b-instruct
 LLM_API_KEY=ollama
 ```
 
+The older `LLM_*` variables still work as a single-provider configuration, but
+the provider toggle prefers the `OPENAI_*` and `LOCAL_LLM_*` variables above so
+both providers can stay configured at once.
+
 `LLM_API_KEY` is a placeholder for Ollama. The local server does not require a real API key, but the OpenAI client expects one.
+
+#### Ollama on Windows, app in WSL
+
+If Ollama runs on Windows while this FastAPI app runs inside WSL, the most
+stable setup is to make WSL and Windows share `localhost` through WSL mirrored
+networking. That lets this project keep using:
+
+```text
+LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
+```
+
+One-time Windows setup:
+
+1. Create or edit `%UserProfile%\.wslconfig`:
+
+   ```ini
+   [wsl2]
+   networkingMode=mirrored
+   ```
+
+2. Restart WSL from PowerShell:
+
+   ```powershell
+   wsl --shutdown
+   ```
+
+3. Start Ollama from the Windows Start menu and keep the project-local values
+   in `.env`:
+
+   ```text
+   LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
+   LOCAL_LLM_MODEL=qwen2.5:7b-instruct
+   LOCAL_LLM_API_KEY=ollama
+   ```
+
+After that, the app loads `.env` automatically and no per-session export
+commands are required.
+
+If mirrored networking is unavailable on your Windows version, use WSL's
+default NAT mode instead:
+
+1. On Windows, set a persistent user environment variable:
+
+   ```text
+   OLLAMA_HOST=0.0.0.0:11434
+   ```
+
+2. Quit and restart the Ollama Windows app.
+3. From WSL, get the Windows host IP with:
+
+   ```bash
+   ip route show | grep -i default | awk '{ print $3 }'
+   ```
+
+4. Put that IP into `.env`, for example:
+
+   ```text
+   LOCAL_LLM_BASE_URL=http://172.30.96.1:11434/v1
+   ```
+
+Mirrored networking is preferred because the NAT-mode host IP can change after
+WSL restarts.
 
 Ask a question:
 
@@ -137,3 +214,16 @@ curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
   -d '{"season":2024,"week":1,"question":"Why did the Bills beat the Cardinals?"}'
 ```
+
+### Inspect the exact LLM prompt
+
+To include the rendered prompt in `/ask` responses and show it in the browser UI,
+start the app with debug prompts enabled:
+
+```bash
+BILLS_AI_DEBUG_PROMPT=1 uvicorn app.main:app --reload
+```
+
+Then ask a question in the UI and expand **LLM Debug Prompt** beneath the metrics
+panel. The `/ask` JSON response will also include a `debug_prompt` object with
+the selected provider, model, instructions, rendered input, and token limit.

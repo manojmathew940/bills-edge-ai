@@ -14,7 +14,7 @@
             <p class="eyebrow">Internal testing UI</p>
             <h1 id="app-title">Bills AI Analyst</h1>
           </div>
-          <span class="status-pill">Local</span>
+          <span id="provider-status" class="status-pill">Local</span>
         </header>
 
         <form id="ask-form" class="ask-form">
@@ -33,6 +33,14 @@
           <label class="field">
             <span>Question</span>
             <textarea id="question" name="question" rows="5" required>Why did the Bills beat the Cardinals?</textarea>
+          </label>
+
+          <label class="provider-toggle">
+            <span>
+              <strong>Use OpenAI</strong>
+              <small>Off uses the local LLM</small>
+            </span>
+            <input id="use-openai" name="use_openai" type="checkbox">
           </label>
 
           <div class="actions">
