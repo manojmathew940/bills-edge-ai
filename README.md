@@ -212,7 +212,17 @@ Ask a question:
 ```bash
 curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
-  -d '{"season":2024,"week":1,"question":"Why did the Bills beat the Cardinals?"}'
+  -d '{"season":2024,"question":"Why did the Bills beat the Cardinals?"}'
+```
+
+The `/ask` endpoint resolves the game from the question text within the selected
+season. Mention an opponent for unique matchups, or include the week when the
+Bills played the same opponent more than once:
+
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"season":2024,"question":"What happened in week 9 against the Dolphins?"}'
 ```
 
 ### Inspect the exact LLM prompt

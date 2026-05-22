@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.analytics.game_metrics import (
     calculate_game_metrics,
+    get_game_from_question,
     get_game_by_week,
 )
 from app.llm.answering import (
@@ -19,7 +20,6 @@ from app.llm.answering import (
 
 class AskRequest(BaseModel):
     season: int
-    week: int
     question: str = Field(min_length=1)
     provider: str = Field(default="local", pattern="^(openai|local)$")
 
@@ -52,7 +52,7 @@ def game_metrics(season: int, week: int):
 @app.post("/ask")
 def ask(request: AskRequest):
     try:
-        game = get_game_by_week(request.season, request.week)
+        game = get_game_from_question(request.season, request.question)
     except FileNotFoundError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except ValueError as error:

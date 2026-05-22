@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from typing import Any
 
 import pandas as pd
@@ -8,6 +9,39 @@ import pandas as pd
 
 BILLS_TEAM = "BUF"
 PROCESSED_DATA_DIR = Path("data/processed")
+TEAM_ALIASES = {
+    "ARI": ("ari", "arizona", "cardinals"),
+    "ATL": ("atl", "atlanta", "falcons"),
+    "BAL": ("bal", "baltimore", "ravens"),
+    "CAR": ("car", "carolina", "panthers"),
+    "CHI": ("chi", "chicago", "bears"),
+    "CIN": ("cin", "cincinnati", "bengals"),
+    "CLE": ("cle", "cleveland", "browns"),
+    "DAL": ("dal", "dallas", "cowboys"),
+    "DEN": ("den", "denver", "broncos"),
+    "DET": ("det", "detroit", "lions"),
+    "GB": ("gb", "green bay", "packers"),
+    "HOU": ("hou", "houston", "texans"),
+    "IND": ("ind", "indianapolis", "colts"),
+    "JAX": ("jax", "jacksonville", "jaguars"),
+    "KC": ("kc", "kansas city", "chiefs"),
+    "LA": ("la", "los angeles", "rams"),
+    "LAC": ("lac", "chargers", "los angeles chargers"),
+    "LV": ("lv", "las vegas", "raiders"),
+    "MIA": ("mia", "miami", "dolphins"),
+    "MIN": ("min", "minnesota", "vikings"),
+    "NE": ("ne", "new england", "patriots"),
+    "NO": ("no", "new orleans", "saints"),
+    "NYG": ("nyg", "new york giants", "giants"),
+    "NYJ": ("nyj", "new york jets", "jets"),
+    "PHI": ("phi", "philadelphia", "eagles"),
+    "PIT": ("pit", "pittsburgh", "steelers"),
+    "SEA": ("sea", "seattle", "seahawks"),
+    "SF": ("sf", "san francisco", "49ers", "niners"),
+    "TB": ("tb", "tampa bay", "buccaneers", "bucs"),
+    "TEN": ("ten", "tennessee", "titans"),
+    "WAS": ("was", "washington", "commanders"),
+}
 
 
 def load_processed_plays(season: int) -> pd.DataFrame:
@@ -25,6 +59,52 @@ def get_game_by_week(season: int, week: int) -> pd.DataFrame:
         raise ValueError(f"No Bills game found for season={season}, week={week}.")
 
     return game.sort_values("play_id")
+
+#TODO: Decide if this should be determinisitic or a high level LLM
+def get_game_from_question(season: int, question: str) -> pd.DataFrame:
+    plays = load_processed_plays(season)
+    games = (
+        plays[["week", "game_date", "opponent"]]
+        .drop_duplicates()
+        .sort_values("week")
+    )
+    normalized_question = question.lower()
+
+    week_match = re.search(r"\bweek\s+(\d{1,2})\b", normalized_question)
+    if week_match:
+        return get_game_by_week(season, int(week_match.group(1)))
+
+    matched_opponents = [
+        opponent
+        for opponent in games["opponent"].unique()
+        if mentions_team(normalized_question, opponent)
+    ]
+
+    if len(matched_opponents) == 1:
+        matching_games = games.loc[games["opponent"] == matched_opponents[0]]
+        if len(matching_games) == 1:
+            return get_game_by_week(season, int(matching_games.iloc[0]["week"]))
+
+        weeks = ", ".join(str(int(week)) for week in matching_games["week"])
+        raise ValueError(
+            f"Multiple {season} games found against {matched_opponents[0]} "
+            f"(weeks {weeks}). Mention the week in the question."
+        )
+
+    if len(matched_opponents) > 1:
+        raise ValueError(
+            "Question mentions multiple opponents. Ask about one game at a time."
+        )
+
+    raise ValueError(
+        "Could not identify a Bills game from the question. "
+        "Mention the opponent or the week."
+    )
+
+
+def mentions_team(question: str, opponent: str) -> bool:
+    aliases = TEAM_ALIASES.get(opponent, (opponent.lower(),))
+    return any(re.search(rf"\b{re.escape(alias)}\b", question) for alias in aliases)
 
 
 def calculate_game_metrics(game: pd.DataFrame) -> dict[str, Any]:
