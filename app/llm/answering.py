@@ -93,6 +93,7 @@ def build_llm_client(provider: str | None = None) -> OpenAI:
 
     return OpenAI(**client_options)
 
+#TODO: Test it out
 #TODO: Seems like there is some duplication here. 
 #Consider looking at combing them. 
 def answer_game_question(
