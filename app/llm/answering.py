@@ -12,9 +12,9 @@ DEFAULT_MODEL = "gpt-5.5"
 DEFAULT_API_KEY = "ollama"
 DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:11434/v1"
 DEFAULT_LOCAL_MODEL = "qwen2.5:7b-instruct"
-MAX_OUTPUT_TOKENS = 900
+MAX_ANSWER_OUTPUT_TOKENS = 900
 
-INSTRUCTIONS = """
+ANSWER_GAME_INSTRUCTIONS = """
 You are a Buffalo Bills football analyst.
 
 Answer the user's question using only the supplied game metrics.
@@ -24,6 +24,15 @@ outside context that is not present in the metrics.
 If the metrics are not enough to answer the question, say what is missing.
 Be clear about direct evidence from the metrics versus interpretation.
 Keep the answer concise and specific.
+""".strip()
+
+ANSWER_DIRECT_INSTRUCTIONS = """
+You are a Buffalo Bills football analyst.
+
+Answer the user's question directly. Keep the answer concise and specific.
+If the question needs specific game, player, roster, injury, transaction, or
+news data that was not supplied, say what extra context is needed instead of
+guessing.
 """.strip()
 
 
@@ -84,7 +93,8 @@ def build_llm_client(provider: str | None = None) -> OpenAI:
 
     return OpenAI(**client_options)
 
-
+#TODO: Seems like there is some duplication here. 
+#Consider looking at combing them. 
 def answer_game_question(
     question: str,
     metrics: dict[str, Any],
@@ -94,15 +104,15 @@ def answer_game_question(
     load_dotenv()
 
     client = build_llm_client(provider)
-    prompt = render_prompt(question, metrics)
+    prompt = render_answer_game_prompt(question, metrics)
     model = get_llm_model(provider)
 
     try:
         response = client.responses.create(
             model=model,
-            instructions=INSTRUCTIONS,
+            instructions=ANSWER_GAME_INSTRUCTIONS,
             input=prompt,
-            max_output_tokens=MAX_OUTPUT_TOKENS,
+            max_output_tokens=MAX_ANSWER_OUTPUT_TOKENS,
         )
     except OpenAIError as error:
         raise LLMServiceError("The LLM service failed to answer the question.") from error
@@ -110,7 +120,30 @@ def answer_game_question(
     return response.output_text
 
 
-def render_prompt(question: str, metrics: dict[str, Any]) -> str:
+def answer_direct_question(
+    question: str,
+    *,
+    provider: str | None = None,
+) -> str:
+    load_dotenv()
+
+    client = build_llm_client(provider)
+    model = get_llm_model(provider)
+
+    try:
+        response = client.responses.create(
+            model=model,
+            instructions=ANSWER_DIRECT_INSTRUCTIONS,
+            input=f"Question:\n{question}",
+            max_output_tokens=MAX_ANSWER_OUTPUT_TOKENS,
+        )
+    except OpenAIError as error:
+        raise LLMServiceError("The LLM service failed to answer the question.") from error
+
+    return response.output_text
+
+
+def render_answer_game_prompt(question: str, metrics: dict[str, Any]) -> str:
     metrics_json = json.dumps(metrics, indent=2, sort_keys=True)
     return (
         f"Question:\n{question}\n\n"
@@ -119,7 +152,7 @@ def render_prompt(question: str, metrics: dict[str, Any]) -> str:
     )
 
 
-def render_debug_prompt(
+def build_answer_game_debug_payload(
     question: str,
     metrics: dict[str, Any],
     *,
@@ -131,7 +164,24 @@ def render_debug_prompt(
         "provider": provider or ("local" if get_llm_base_url() else "openai"),
         "model": get_llm_model(provider),
         "base_url": get_llm_base_url(provider),
-        "instructions": INSTRUCTIONS,
-        "input": render_prompt(question, metrics),
-        "max_output_tokens": MAX_OUTPUT_TOKENS,
+        "instructions": ANSWER_GAME_INSTRUCTIONS,
+        "input": render_answer_game_prompt(question, metrics),
+        "max_output_tokens": MAX_ANSWER_OUTPUT_TOKENS,
+    }
+
+
+def build_answer_direct_debug_payload(
+    question: str,
+    *,
+    provider: str | None = None,
+) -> dict[str, Any]:
+    load_dotenv()
+
+    return {
+        "provider": provider or ("local" if get_llm_base_url() else "openai"),
+        "model": get_llm_model(provider),
+        "base_url": get_llm_base_url(provider),
+        "instructions": ANSWER_DIRECT_INSTRUCTIONS,
+        "input": f"Question:\n{question}",
+        "max_output_tokens": MAX_ANSWER_OUTPUT_TOKENS,
     }

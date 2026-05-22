@@ -5,7 +5,7 @@ const errorBox = document.querySelector("#error");
 const answerBox = document.querySelector("#answer");
 const metricsBox = document.querySelector("#metrics");
 const debugPanel = document.querySelector("#debug-panel");
-const debugPromptBox = document.querySelector("#debug-prompt");
+const debugPayloadBox = document.querySelector("#debug-payload");
 const useOpenAIInput = document.querySelector("#use-openai");
 const providerStatus = document.querySelector("#provider-status");
 
@@ -24,12 +24,12 @@ function clearError() {
   errorBox.hidden = true;
 }
 
-function setDebugPrompt(debugPrompt) {
-  if (debugPrompt) {
-    debugPromptBox.textContent = JSON.stringify(debugPrompt, null, 2);
+function setDebugPayload(debugPayload) {
+  if (debugPayload) {
+    debugPayloadBox.textContent = JSON.stringify(debugPayload, null, 2);
     debugPanel.hidden = false;
   } else {
-    debugPromptBox.textContent = "{}";
+    debugPayloadBox.textContent = "{}";
     debugPanel.hidden = true;
   }
 }
@@ -100,7 +100,7 @@ async function askQuestion(payload) {
     const detail = data.detail || {};
     const message = detail.error || detail || `Request failed with status ${response.status}`;
     const error = new Error(message);
-    error.debugPrompt = detail.debug_prompt;
+    error.debugPayload = detail.debug_payload || detail.debug_prompt;
     throw error;
   }
 
@@ -126,12 +126,12 @@ form.addEventListener("submit", async (event) => {
     const data = await askQuestion(payload);
     renderAnswer(data.answer);
     metricsBox.textContent = JSON.stringify(data.metrics || {}, null, 2);
-    setDebugPrompt(data.debug_prompt);
+    setDebugPayload(data.debug_payload || data.debug_prompt);
     setProviderStatus(data.provider || payload.provider);
   } catch (error) {
     answerBox.textContent = "The answer will appear here after a successful request.";
     answerBox.classList.add("empty");
-    setDebugPrompt(error.debugPrompt);
+    setDebugPayload(error.debugPayload);
     showError(error.message);
   } finally {
     setLoading(false);
