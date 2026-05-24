@@ -7,58 +7,102 @@
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body>
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>Bills AI Analyst</span>
+        </div>
+        <span id="provider-status" class="status-pill">Select model</span>
+      </div>
+    </header>
+
     <main class="shell">
-      <section class="workspace" aria-labelledby="app-title">
-        <header class="masthead">
-          <div>
-            <p class="eyebrow">Internal testing UI</p>
-            <h1 id="app-title">Bills AI Analyst</h1>
+      <section class="banner" aria-labelledby="app-title">
+        <img src="/static/assets/stadium-header.webp" alt="" aria-hidden="true">
+        <div class="banner-shade"></div>
+        <div class="banner-copy">
+          <p class="eyebrow">Buffalo Football Analysis</p>
+          <h1 id="app-title">Bills AI Analyst</h1>
+        </div>
+      </section>
+
+      <div class="analysis-grid">
+        <section class="query-panel" aria-labelledby="query-title">
+          <div class="panel-heading">
+            <p class="panel-label">Question</p>
+            <h2 id="query-title">What do you want to understand?</h2>
           </div>
-          <span id="provider-status" class="status-pill">Local</span>
-        </header>
 
-        <form id="ask-form" class="ask-form">
-          <label class="field">
-            <span>Season</span>
-            <input id="season" name="season" type="number" min="1999" max="2100" value="2024" required>
-          </label>
+          <form id="ask-form" class="ask-form">
+            <label class="field season-field">
+              <span>Season</span>
+              <input id="season" name="season" type="number" min="1999" max="2100" value="2024" required>
+            </label>
 
-          <label class="field">
-            <span>Question</span>
-            <textarea id="question" name="question" rows="5" required>Why did the Bills beat the Cardinals?</textarea>
-          </label>
+            <label class="field">
+              <span>Model</span>
+              <select id="model" name="provider" required>
+                <option value="" selected disabled>Select a model</option>
+                <option value="local">Qwen 2.5 (Local)</option>
+                <option value="openai">OpenAI (GPT-5.5)</option>
+              </select>
+            </label>
 
-          <label class="provider-toggle">
-            <span>
-              <strong>Use OpenAI</strong>
-              <small>Off uses the local LLM</small>
-            </span>
-            <input id="use-openai" name="use_openai" type="checkbox">
-          </label>
+            <label class="field">
+              <span>Ask the analyst</span>
+              <textarea id="question" name="question" rows="6" required>Why did the Bills beat the Cardinals?</textarea>
+            </label>
 
-          <div class="actions">
-            <button id="ask-button" type="submit">Ask</button>
-            <p id="loading" class="loading" hidden>Asking the model...</p>
-          </div>
-        </form>
+            <div class="actions">
+              <button id="ask-button" type="submit">Analyze</button>
+              <p id="loading" class="loading" hidden>Analyzing question...</p>
+            </div>
+          </form>
 
-        <div id="error" class="message error" role="alert" hidden></div>
+          <details class="developer-tools">
+            <summary>Developer Tools</summary>
+            <div class="developer-content">
+              <details class="data-panel">
+                <summary>Raw Metrics JSON</summary>
+                <pre id="metrics">{}</pre>
+              </details>
 
-        <section class="result" aria-labelledby="answer-title">
-          <h2 id="answer-title">Answer</h2>
-          <div id="answer" class="answer empty">Ask a question to see the answer here.</div>
+              <details id="debug-panel" class="data-panel" hidden>
+                <summary>LLM Debug Payload</summary>
+                <pre id="debug-payload">{}</pre>
+              </details>
+            </div>
+          </details>
         </section>
 
-        <details class="metrics-panel">
-          <summary>Metrics JSON</summary>
-          <pre id="metrics">{}</pre>
-        </details>
+        <section class="answer-panel" aria-labelledby="answer-title">
+          <div class="answer-header">
+            <div>
+              <p class="panel-label">Analysis</p>
+              <h2 id="answer-title">Answer</h2>
+            </div>
+            <span id="grounding-badge" class="grounding-badge neutral">Ready</span>
+          </div>
 
-        <details id="debug-panel" class="debug-panel" hidden>
-          <summary>LLM Debug Payload</summary>
-          <pre id="debug-payload">{}</pre>
-        </details>
-      </section>
+          <div id="error" class="message error" role="alert" hidden></div>
+
+          <p id="grounding-detail" class="grounding-detail" hidden></p>
+
+          <section id="game-summary" class="game-summary" aria-labelledby="game-summary-title" hidden>
+            <div class="scoreline">
+              <div>
+                <p id="game-meta" class="game-meta"></p>
+                <h3 id="game-summary-title">Game summary</h3>
+              </div>
+              <p id="final-score" class="final-score"></p>
+            </div>
+            <div id="summary-metrics" class="summary-metrics"></div>
+          </section>
+
+          <div id="answer" class="answer empty">Submit a question to begin an analysis.</div>
+        </section>
+      </div>
     </main>
 
     <script src="/static/app.js"></script>
