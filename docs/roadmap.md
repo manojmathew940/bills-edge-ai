@@ -34,10 +34,10 @@ Analysis-ready dataset grains:
 Key outcome:
 A stable analysis-ready dataset that can be reused by later analytics logic.
 
-## Phase 2: Analytics Engine
+## Phase 2: Basic Game Metrics Engine
 
 Goal:
-Create deterministic logic for answering post-game questions from structured data.
+Provide deterministic metrics for one selected Bills game from structured data.
 
 Example questions:
 
@@ -45,7 +45,7 @@ Example questions:
 - Why did they take 8 sacks?
 - What would have helped them win?
 
-Planned metrics:
+Initial metrics:
 
 - sacks and pressure-related metrics
 - turnover margin
@@ -56,24 +56,49 @@ Planned metrics:
 - drive-level outcomes
 
 Key outcome:
-A backend analysis layer that can produce ranked, evidence-based reasons for game outcomes.
+A reusable game metrics packet that can be passed to an LLM or exposed through
+the API without requiring advanced interpretation logic.
 
-## Phase 3: LLM Layer
+Deferred enhancements:
+
+- deterministic ranking of likely game factors
+- key drive and key play evidence
+- team, season, and player analytics engines
+
+## Phase 3: Initial LLM Workflow
 
 Goal:
 Allow users to ask natural-language questions and receive readable, grounded answers.
 
 Responsibilities:
 
-- parse user intent
-- identify the relevant game or topic
-- convert analytics output into clear explanations
+- use a planner LLM to select the available answer path
+- identify the relevant game for game-specific questions
+- answer game questions from the basic metrics packet
+- permit direct LLM answers for questions not served by a metrics engine
 - distinguish direct evidence from inference
 
 Key outcome:
-A question-answering workflow that feels natural while remaining grounded in structured data.
+A working end-to-end question flow, with game-specific answers grounded in
+structured metrics and unsupported analytic capabilities deferred.
 
-## Phase 4: Web Search
+## Phase 4: Website Workflow
+
+Goal:
+Expose the system through a usable website where users can ask Bills questions.
+
+Likely features:
+
+- game/question input workflow
+- answer view
+- metrics and routing visibility for internal testing
+- supporting context panel as additional layers become available
+
+Key outcome:
+A usable vertical slice of the Bills analyst experience before adding further
+context sources or analytic engines.
+
+## Phase 5: Web Search Context
 
 Goal:
 Add live public context when it improves answers.
@@ -88,7 +113,7 @@ Likely uses:
 Key outcome:
 The system can combine Bills analytics with fresh public reporting when needed.
 
-## Phase 5: RAG Comparison
+## Phase 6: RAG Comparison
 
 Goal:
 Compare curated retrieval against web search for Bills-specific questions.
@@ -104,22 +129,41 @@ Focus areas:
 Key outcome:
 A clear understanding of when RAG adds value beyond web search.
 
-## Phase 6: Website
+## Phase 7: AWS Deployment / Operations
 
 Goal:
-Expose the system through a simple website where users can ask Bills questions.
+Deploy the usable application workflow and establish basic operational hosting.
 
-Likely features:
+Likely concerns:
 
-- game selector
-- question input
-- answer view
-- supporting evidence panel
+- application hosting
+- environment and secret configuration
+- storage/access strategy for processed data
+- basic logging and monitoring
 
 Key outcome:
-A usable Bills analysis experience rather than just a backend prototype.
+The locally validated application can run in a managed environment without
+coupling deployment work to future analytics expansion.
 
-## Phase 7: Draft Extension
+## Phase 8: Analytics Enhancements
+
+Goal:
+Deepen the analytics layer behind stable engine boundaries after the initial
+product, context, retrieval, and deployment flows are established.
+
+Likely components:
+
+- ranked explanations for game outcomes
+- key drive and key play evidence packets
+- team and season trend engines
+- player metrics engines
+- planner routes for newly available engines
+
+Key outcome:
+Higher-quality, inspectable analysis can be added modularly without redesigning
+the website, web search, RAG, or deployment layers.
+
+## Phase 9: Draft And Roster Extension
 
 Goal:
 Extend the architecture to support Bills draft and roster questions.
