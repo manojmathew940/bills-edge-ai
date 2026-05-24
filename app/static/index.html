@@ -13,7 +13,7 @@
           <span class="brand-mark" aria-hidden="true"></span>
           <span>Bills AI Analyst</span>
         </div>
-        <span id="provider-status" class="status-pill">Local model</span>
+        <span id="provider-status" class="status-pill">Select model</span>
       </div>
     </header>
 
@@ -41,6 +41,15 @@
             </label>
 
             <label class="field">
+              <span>Model</span>
+              <select id="model" name="provider" required>
+                <option value="" selected disabled>Select a model</option>
+                <option value="local">Qwen 2.5 (Local)</option>
+                <option value="openai">OpenAI (GPT-5.5)</option>
+              </select>
+            </label>
+
+            <label class="field">
               <span>Ask the analyst</span>
               <textarea id="question" name="question" rows="6" required>Why did the Bills beat the Cardinals?</textarea>
             </label>
@@ -54,14 +63,6 @@
           <details class="developer-tools">
             <summary>Developer Tools</summary>
             <div class="developer-content">
-              <label class="provider-toggle">
-                <span>
-                  <strong>Answer provider</strong>
-                  <small>Use OpenAI instead of the local model</small>
-                </span>
-                <input id="use-openai" name="use_openai" type="checkbox">
-              </label>
-
               <details class="data-panel">
                 <summary>Raw Metrics JSON</summary>
                 <pre id="metrics">{}</pre>

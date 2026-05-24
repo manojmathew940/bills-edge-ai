@@ -6,7 +6,7 @@ const answerBox = document.querySelector("#answer");
 const metricsBox = document.querySelector("#metrics");
 const debugPanel = document.querySelector("#debug-panel");
 const debugPayloadBox = document.querySelector("#debug-payload");
-const useOpenAIInput = document.querySelector("#use-openai");
+const modelSelect = document.querySelector("#model");
 const providerStatus = document.querySelector("#provider-status");
 const groundingBadge = document.querySelector("#grounding-badge");
 const groundingDetail = document.querySelector("#grounding-detail");
@@ -42,11 +42,19 @@ function setDebugPayload(debugPayload) {
 }
 
 function getSelectedProvider() {
-  return useOpenAIInput.checked ? "openai" : "local";
+  return modelSelect.value;
 }
 
 function setProviderStatus(provider) {
-  providerStatus.textContent = provider === "openai" ? "OpenAI model" : "Local model";
+  if (provider === "openai") {
+    providerStatus.textContent = "OpenAI GPT-5.5";
+    return;
+  }
+  if (provider === "local") {
+    providerStatus.textContent = "Qwen 2.5 Local";
+    return;
+  }
+  providerStatus.textContent = "Select model";
 }
 
 function setGrounding(label, style, detail) {
@@ -234,6 +242,6 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-useOpenAIInput.addEventListener("change", () => {
+modelSelect.addEventListener("change", () => {
   setProviderStatus(getSelectedProvider());
 });
