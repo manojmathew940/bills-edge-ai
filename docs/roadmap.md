@@ -98,36 +98,39 @@ Key outcome:
 A usable vertical slice of the Bills analyst experience before adding further
 context sources or analytic engines.
 
-## Phase 5: Web Search Context
+## Phase 5: RAG Context
 
 Goal:
-Add live public context when it improves answers.
+Retrieve curated Bills-related context when structured metrics alone cannot
+answer the question.
 
 Likely uses:
 
+- selected game recaps
+- press-conference transcripts or summaries
+- injury and reporting documents
+- other controlled Bills source material
+
+Key outcome:
+The system can combine Bills analytics with retrieved supporting context and
+citations through a stable context-source workflow.
+
+## Phase 6: Web Search Context
+
+Goal:
+Extend the retrieval and citation workflow with fresh public reporting when it
+improves answers.
+
+Likely uses:
+
+- current injury updates
+- recent Bills news
 - post-game articles
-- press conferences
-- injury updates
 - coach and player quotes
 
 Key outcome:
-The system can combine Bills analytics with fresh public reporting when needed.
-
-## Phase 6: RAG Comparison
-
-Goal:
-Compare curated retrieval against web search for Bills-specific questions.
-
-Focus areas:
-
-- consistency
-- source control
-- citation quality
-- repeatability
-- answer usefulness
-
-Key outcome:
-A clear understanding of when RAG adds value beyond web search.
+The system can supplement structured analytics and curated RAG with current
+public information when needed.
 
 ## Phase 7: AWS Deployment / Operations
 
