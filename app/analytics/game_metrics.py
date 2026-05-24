@@ -60,7 +60,6 @@ def get_game_by_week(season: int, week: int) -> pd.DataFrame:
 
     return game.sort_values("play_id")
 
-#TODO: Decide if this should be determinisitic or a high level LLM
 def get_game_from_question(season: int, question: str) -> pd.DataFrame:
     plays = load_processed_plays(season)
     games = (

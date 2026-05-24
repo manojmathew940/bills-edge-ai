@@ -215,9 +215,13 @@ curl -X POST http://localhost:8000/ask \
   -d '{"season":2024,"question":"Why did the Bills beat the Cardinals?"}'
 ```
 
-The `/ask` endpoint resolves the game from the question text within the selected
-season. Mention an opponent for unique matchups, or include the week when the
-Bills played the same opponent more than once:
+The `/ask` endpoint first runs a small LLM planner. Questions about one
+specific Bills game are routed through deterministic game metrics. General
+Bills questions are answered directly by the selected LLM without a game metric
+packet. The response includes a `plan` object showing the selected engine.
+
+For game-specific questions, mention an opponent for unique matchups, or include
+the week when the Bills played the same opponent more than once:
 
 ```bash
 curl -X POST http://localhost:8000/ask \
@@ -225,15 +229,17 @@ curl -X POST http://localhost:8000/ask \
   -d '{"season":2024,"question":"What happened in week 9 against the Dolphins?"}'
 ```
 
-### Inspect the exact LLM prompt
+### Inspect the LLM debug payload
 
-To include the rendered prompt in `/ask` responses and show it in the browser UI,
-start the app with debug prompts enabled:
+To include the LLM call details in `/ask` responses and show them in the browser
+UI, start the app with debug payloads enabled:
 
 ```bash
-BILLS_AI_DEBUG_PROMPT=1 uvicorn app.main:app --reload
+BILLS_AI_DEBUG_PAYLOAD=1 uvicorn app.main:app --reload
 ```
 
-Then ask a question in the UI and expand **LLM Debug Prompt** beneath the metrics
-panel. The `/ask` JSON response will also include a `debug_prompt` object with
-the selected provider, model, instructions, rendered input, and token limit.
+Then ask a question in the UI and expand **LLM Debug Payload** beneath the
+metrics panel. The `/ask` JSON response will also include a `debug_payload`
+object with the selected provider, model, instructions, rendered input, and
+token limit. The older `BILLS_AI_DEBUG_PROMPT=1` flag still works as a
+backward-compatible alias.
