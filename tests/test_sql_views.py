@@ -6,6 +6,7 @@ import unittest
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from app.analytics.sql_execution import execute_analytics_sql
 from app.analytics.sql_views import (
     AnalyticsViewError,
     available_seasons,
@@ -61,6 +62,38 @@ class SqlViewsTest(unittest.TestCase):
                 "epa",
             }.issubset(columns)
         )
+
+    def test_execute_analytics_sql_returns_json_safe_rows(self) -> None:
+        result = execute_analytics_sql(
+            "SELECT season, COUNT(*) AS rows "
+            "FROM bills_plays "
+            "GROUP BY season "
+            "ORDER BY season"
+        )
+        paths = processed_play_paths()
+        expected_rows = [
+            {"season": season, "rows": rows}
+            for season, rows in expected_rows_by_season(paths)
+        ]
+
+        self.assertEqual(result["columns"], ["season", "rows"])
+        self.assertEqual(result["rows"], expected_rows)
+        self.assertEqual(result["row_count"], len(expected_rows))
+        self.assertEqual(result["row_limit"], 100)
+        self.assertIn("LIMIT 100", result["sql"])
+
+    def test_execute_analytics_sql_applies_row_limit(self) -> None:
+        result = execute_analytics_sql(
+            "SELECT play_id FROM bills_plays ORDER BY season, play_id",
+            row_limit=3,
+        )
+
+        self.assertEqual(result["row_count"], 3)
+        self.assertEqual(result["row_limit"], 3)
+
+    def test_execute_analytics_sql_rejects_invalid_row_limit(self) -> None:
+        with self.assertRaisesRegex(AnalyticsViewError, "row_limit"):
+            execute_analytics_sql("SELECT 1", row_limit=0)
 
     def test_no_processed_files_raises_clear_error(self) -> None:
         empty_dir = Path("/tmp/bills-empty-processed-test")
