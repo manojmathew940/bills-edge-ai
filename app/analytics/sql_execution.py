@@ -1,18 +1,34 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from app.analytics.sql_views import AnalyticsViewError, create_analytics_connection
+from app.analytics.sql_validation import validate_analytics_sql
 
 
 DEFAULT_SQL_ROW_LIMIT = 100
 
 
-def execute_analytics_sql(
+@dataclass(frozen=True)
+class AnalyticsSqlRows:
+    columns: list[str]
+    rows: list[dict[str, Any]]
+
+
+@dataclass(frozen=True)
+class AnalyticsSqlResult:
+    is_valid: bool
+    validation_reason: str
+    columns: list[str]
+    rows: list[dict[str, Any]]
+
+
+def _execute_analytics_sql(
     sql: str,
     *,
     row_limit: int = DEFAULT_SQL_ROW_LIMIT,
-) -> dict[str, Any]:
+) -> AnalyticsSqlRows:
     if row_limit < 1:
         raise AnalyticsViewError("row_limit must be at least 1.")
 
@@ -22,13 +38,33 @@ def execute_analytics_sql(
     columns = [column[0] for column in cursor.description]
     rows = cursor.fetchall()
 
-    return {
-        "sql": limited_sql,
-        "columns": columns,
-        "rows": [dict(zip(columns, row)) for row in rows],
-        "row_count": len(rows),
-        "row_limit": row_limit,
-    }
+    return AnalyticsSqlRows(
+        columns=columns,
+        rows=[dict(zip(columns, row)) for row in rows],
+    )
+
+
+def validate_and_execute_analytics_sql(
+    sql: str,
+    *,
+    row_limit: int = DEFAULT_SQL_ROW_LIMIT,
+) -> AnalyticsSqlResult:
+    validation = validate_analytics_sql(sql)
+    if not validation.is_valid:
+        return AnalyticsSqlResult(
+            is_valid=False,
+            validation_reason=validation.reason,
+            columns=[],
+            rows=[],
+        )
+
+    result = _execute_analytics_sql(validation.sql, row_limit=row_limit)
+    return AnalyticsSqlResult(
+        is_valid=True,
+        validation_reason=validation.reason,
+        columns=result.columns,
+        rows=result.rows,
+    )
 
 
 def apply_limit(sql: str, row_limit: int) -> str:

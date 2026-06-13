@@ -6,3 +6,4 @@ pandas
 pyarrow
 requests
 duckdb
+sqlglot

@@ -6,7 +6,7 @@ import sys
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
-from app.analytics.sql_execution import execute_analytics_sql
+from app.analytics.sql_execution import validate_and_execute_analytics_sql
 
 
 SQL = """
@@ -25,14 +25,14 @@ ORDER BY season
 
 
 def main() -> None:
-    result = execute_analytics_sql(SQL)
+    result = validate_and_execute_analytics_sql(SQL)
+    if not result.is_valid:
+        print(f"SQL rejected: {result.validation_reason}")
+        return
 
-    print("Executed SQL:")
-    print(result["sql"])
+    print_table(result.columns, result.rows)
     print()
-    print_table(result["columns"], result["rows"])
-    print()
-    print(f"Rows returned: {result['row_count']} / limit {result['row_limit']}")
+    print(f"Rows returned: {len(result.rows)}")
 
 
 def print_table(columns: list[str], rows: list[dict]) -> None:
