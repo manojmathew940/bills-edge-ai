@@ -3,11 +3,11 @@
 ## Project Overview
 This repository contains the "Bills AI Analyst" project.
 
-The goal is to build an AI-assisted system that analyzes Buffalo Bills games and explains outcomes (wins/losses) using structured data, reasoning, and clear, ranked explanations.
+The goal is to build an AI-assisted system that analyzes Buffalo Bills games and explains outcomes using structured data, validated queries, reasoning, and clear explanations.
 
 The AI-assisted system will:
 •	Answer questions like: Why did the Bills lose this game? What changed after halftime? Which three factors mattered most? Which drives and plays support that claim?
-•	Return structured evidence rather than just prose: ranked reasons, supporting metrics, key drives, key plays, charts, and retrieved recap snippets.
+•	Return structured evidence rather than just prose: generated SQL, validation status, result rows, ranked reasons, supporting metrics, key drives, key plays, charts, and eventually retrieved recap snippets.
 •	Allow drilldown from season to game to drive to play, so the user can inspect the evidence rather than trust a black-box answer.
 
 
@@ -21,7 +21,7 @@ The AI-assisted system will:
 
 2. **Explainability first**
    - Outputs should clearly explain *why* something happened
-   - Prefer ranked reasons, structured outputs, and traceable logic
+   - Prefer ranked reasons, structured outputs, validated SQL, returned data, and traceable logic
 
 3. **Incremental development**
    - Make small, testable changes
@@ -62,6 +62,15 @@ Before editing files, agents should provide an overview of the changes and get t
 
 If code and docs diverge, agents should use judgment, verify the current codebase, and update documentation when appropriate.
 
+The target question-answering architecture is data-extractor first:
+
+1. The first LLM decides whether approved local data can help answer the question.
+2. If data is useful, that LLM produces SQL against approved analytics views.
+3. Application code validates the SQL before execution.
+4. Application code executes valid read-only SQL with limits.
+5. The answer LLM receives the question, extractor decision, SQL, validation status, and rows.
+6. If no local data is needed or available, the answer LLM answers directly or states what context is missing.
+
 ---
 
 ## Coding Guidelines
@@ -89,6 +98,7 @@ Example direction:
 Responses should:
 - be structured (JSON)
 - include reasoning, not just results
+- expose data used, validation status, and limits when local data contributes to the answer
 
 ---
 
@@ -97,11 +107,16 @@ Responses should:
 When implementing analysis logic:
 
 - Prefer **structured reasoning** over black-box outputs
+- Prefer data extraction from approved analytics views before free-form answering
+- Validate all LLM-generated SQL before execution
+- Keep raw data files out of runtime query surfaces
+- Make generated SQL, validation status, and returned rows inspectable
 - Break explanations into:
   - ranked factors
   - supporting evidence
 - Avoid vague summaries
-- Show intermediate logic when possible
+- Show intermediate data and logic when possible
+- If available data does not answer the question, state what context is missing instead of forcing an answer
 
 ---
 
@@ -121,6 +136,7 @@ Agents should prioritize:
 
 - Improving clarity of code and structure
 - Adding small, meaningful features
+- Strengthening the data extractor, SQL validation, and data-grounded answer workflow
 - Enhancing documentation (especially README)
 - Suggesting logical next steps
 - Keeping changes scoped and understandable
@@ -130,6 +146,8 @@ Agents should prioritize:
 ## Example Good Tasks
 
 - Add a simple FastAPI endpoint for game analysis
+- Add a guarded SQL-backed question flow
+- Improve extractor prompts or schema guidance
 - Improve README with clear project explanation
 - Refactor a function for readability
 - Add input/output schema for an endpoint

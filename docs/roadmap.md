@@ -4,12 +4,35 @@
 
 This document captures the planned build order for the Bills AI Analyst project.
 
-The project is intended to evolve into a Bills-focused web application that combines:
+The project is intended to evolve into a Bills-focused web application that
+combines:
 
-- structured game analytics
-- LLM-based question understanding and explanation
-- web search and/or retrieval for supporting context
-- future draft analysis workflows
+- structured NFL and Bills analytics data
+- LLM-based data extraction from approved analytics views
+- deterministic SQL validation and execution
+- LLM-powered explanation generation grounded in returned data
+- optional retrieval or web search for context that is not available locally
+- future draft and roster analysis workflows
+
+## Target Architecture
+
+The primary question-answering flow should be data-extractor first:
+
+1. A user asks a natural-language Bills or NFL question.
+2. A data extractor LLM decides whether the local analytics database can help.
+3. If data is useful, the extractor produces one SQL query against approved
+   analytics views.
+4. Application code validates the SQL before execution.
+5. Application code executes valid read-only SQL with row limits.
+6. The answer LLM receives the original question, extractor decision, SQL,
+   validation status, and returned rows.
+7. The answer LLM explains what the data supports, or says what context is
+   missing when the data is insufficient.
+
+If the question does not need local structured data, the answer LLM may answer
+directly. If the question needs unavailable current, injury, roster, reporting,
+or transaction context, the answer should say what extra context is missing
+instead of guessing.
 
 ## Phase 1: Data Foundation
 
@@ -27,89 +50,20 @@ Analysis-ready dataset grains:
 
 - `bills_plays_<season>.parquet`: atomic play-level source of truth
 - `bills_drives_<season>.parquet`: possession-level outcomes and context
-- `bills_quarter_summaries_<season>.parquet`: quarter-level scoring, efficiency, and momentum summaries
-- `bills_game_summaries_<season>.parquet`: game-level metrics for post-game analysis
+- `bills_quarter_summaries_<season>.parquet`: quarter-level scoring,
+  efficiency, and momentum summaries
+- `bills_game_summaries_<season>.parquet`: game-level metrics for post-game
+  analysis
 - `bills_season_summaries.parquet`: season-level trends and comparisons
 
 Key outcome:
-A stable analysis-ready dataset that can be reused by later analytics logic.
+A stable analysis-ready dataset that can be reused by deterministic analytics
+logic and LLM-generated SQL.
 
-## Phase 2: Basic Game Metrics Engine
-
-Goal:
-Provide deterministic metrics for one selected Bills game from structured data.
-
-Example questions:
-
-- Why did the Bills lose game X?
-- Why did they take 8 sacks?
-- What would have helped them win?
-
-Initial metrics:
-
-- sacks and pressure-related metrics
-- turnover margin
-- third-down conversion rate
-- red-zone efficiency
-- explosive plays allowed
-- scoring by quarter
-- drive-level outcomes
-
-Key outcome:
-A reusable game metrics packet that can be passed to an LLM or exposed through
-the API without requiring advanced interpretation logic.
-
-Deferred enhancements:
-
-- deterministic ranking of likely game factors
-- key drive and key play evidence
-- team, season, and player analytics engines
-
-## Phase 3: Initial LLM Workflow
+## Phase 2: Guarded SQL Analytics Foundation
 
 Goal:
-Allow users to ask natural-language questions and receive readable, grounded answers.
-
-Responsibilities:
-
-- use a planner LLM to select the available answer path
-- identify the relevant game for game-specific questions
-- answer game questions from the basic metrics packet
-- permit direct LLM answers for questions not served by a metrics engine
-- distinguish direct evidence from inference
-
-Key outcome:
-A working end-to-end question flow, with game-specific answers grounded in
-structured metrics and unsupported analytic capabilities deferred.
-
-## Phase 4: Website Workflow
-
-Goal:
-Expose the system through a usable website where users can ask Bills questions.
-
-Likely features:
-
-- game/question input workflow
-- answer view
-- metrics and routing visibility for internal testing
-- supporting context panel as additional layers become available
-
-Key outcome:
-A usable vertical slice of the Bills analyst experience before adding further
-context sources or analytic engines.
-
-## Phase 5: Guarded LLM-To-SQL Analytics Engine
-
-Goal:
-Build a flexible analytics engine where an LLM generates SQL against approved
-cleaned Bills analytics views.
-
-Example questions:
-
-- Are the Bills better in the first or second half?
-- How do rushing yards compare by quarter?
-- How many sacks did Buffalo allow by opponent?
-- How does defensive EPA differ between wins and losses?
+Create the approved query surface that the data extractor LLM can target.
 
 Likely components:
 
@@ -120,28 +74,99 @@ Likely components:
 - read-only query execution with row limits and timeouts
 - returned SQL, query results, and validation metadata
 
-Key outcome:
-The system can answer broader analytics questions with flexible SQL while
-keeping runtime queries constrained to reviewed, cleaned analytics data.
+Example questions:
 
-## Phase 6: LLM-To-SQL Analytics Workflow
+- Are the Bills better in the first or second half?
+- How do rushing yards compare by quarter?
+- How many sacks did Buffalo allow by opponent?
+- How does defensive EPA differ between wins and losses?
+
+Key outcome:
+The system has a constrained, inspectable way to retrieve local data for broad
+analytics questions.
+
+## Phase 3: Data Extractor LLM Workflow
 
 Goal:
-Expose the guarded LLM-to-SQL engine through the planner, answer LLM, API, and
-website.
+Use an LLM to extract the best available local data for a user question before
+answer generation.
+
+Responsibilities:
+
+- decide whether approved local data can help answer the question
+- generate one SQL query when data is useful
+- return a structured extraction decision, not a final answer
+- validate all generated SQL before execution
+- optionally allow one bounded correction attempt after validation or execution
+  failure
+- pass extractor metadata, SQL, validation status, and rows to the answer LLM
+
+Suggested extractor output:
+
+- `needs_data`: whether local structured data should be queried
+- `sql`: SQL query, or null when no local data is needed
+- `reason`: why this data was or was not requested
+- `confidence`: extractor confidence
+- `data_not_needed_reason`: explanation when no query is produced
+
+Key outcome:
+The application answers analytics questions through visible data retrieval
+rather than planner-selected answer paths or unsupported direct responses.
+
+## Phase 4: Answer Generation And API Workflow
+
+Goal:
+Expose the extractor-first workflow through the API and produce grounded,
+readable answers.
 
 Likely components:
 
-- planner route for broad analytics questions
-- SQL-generation LLM that targets the approved DuckDB analytics views
-- one bounded correction attempt after validation or execution failure
-- answer LLM explanations grounded in SQL results
-- API and website visibility into generated SQL, query results, and validation
-  status
+- `/ask` runs the data extractor before the answer LLM
+- SQL is validated and executed deterministically by application code
+- answer LLM receives the question plus any SQL results
+- responses expose data-request metadata, SQL, rows, and validation status
+- direct answers remain available when local data is unnecessary
+- insufficient-data answers clearly describe what is missing
 
 Key outcome:
 Users can ask flexible Bills analytics questions and receive inspectable,
-data-grounded answers rather than unsupported direct LLM responses.
+data-grounded answers.
+
+## Phase 5: Website Workflow
+
+Goal:
+Expose the system through a usable website where users can ask Bills questions.
+
+Likely features:
+
+- question input workflow
+- answer view
+- grounding indicator such as `SQL analytics`, `No local data used`, or
+  `Data unavailable`
+- developer visibility into generated SQL, validation status, and result rows
+- supporting context panel as additional layers become available
+
+Key outcome:
+A usable vertical slice of the Bills analyst experience with visible evidence
+for data-backed answers.
+
+## Phase 6: Deterministic Metrics And Evidence Enhancements
+
+Goal:
+Keep deterministic metrics as useful reusable evidence while the primary answer
+path remains extractor-first.
+
+Likely components:
+
+- game-level metric packets for selected matchups
+- deterministic ranking of likely game factors
+- key drive and key play evidence
+- companion views or summaries that make common analyses easier for SQL
+  extraction
+
+Key outcome:
+Frequently needed football evidence can be computed consistently and exposed to
+the extractor workflow without replacing the SQL validation boundary.
 
 ## Phase 7: Analytics Data Expansion
 
@@ -155,10 +180,10 @@ Likely components:
 - snap counts
 - Next Gen Stats offensive enrichment
 - participation and charting data where available
-- query-engine registry updates as each dataset becomes available
+- approved-view updates as each dataset becomes available
 
 Key outcome:
-The analytics engine can answer richer player, usage, and situational questions
+The extractor can answer richer player, usage, and situational questions
 without widening the cleaned play table indefinitely.
 
 ## Phase 8: AWS Deployment / Operations
@@ -191,29 +216,34 @@ Example questions:
 
 Likely components:
 
-- draft analytics planner
+- draft and roster data extraction workflow
 - Bills roster-needs logic
 - prospect data ingestion
 - draft-specific retrieval
 
 Key outcome:
-The project expands from post-game analysis into broader Bills decision-support workflows.
+The project expands from post-game analysis into broader Bills decision-support
+workflows while preserving the same principle: retrieve inspectable evidence
+first, then synthesize.
 
 ## Analytics Data Policy
 
 - Runtime analytics query cleaned tables only.
 - Raw nflverse files remain recoverable ingestion sources, not user-facing
   query targets.
+- LLMs may propose SQL, but application code must validate and execute it.
 - Promote useful raw fields deliberately into cleaned tables or normalized
   companion datasets.
 - Keep separate tables for separate grains, such as play-level analytics,
   player-game production, player-game snap counts, and optional advanced
   enrichment.
+- Responses should expose the data used, validation status, and limits whenever
+  local data contributes to an answer.
 
 ## Deferred: Retrieval And Web Search Context
 
 Goal:
-Add outside context only after the deterministic analytics workflow and AWS
+Add outside context only after the local data extraction workflow and AWS
 deployment are established.
 
 Possible future uses:

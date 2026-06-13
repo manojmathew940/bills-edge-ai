@@ -13,12 +13,16 @@ The goal is to answer questions such as:
 - Would more blitzing have helped?
 - What would have helped them win?
 
-The long-term direction is to support a hybrid architecture where:
+The long-term direction is to support a data-grounded architecture where:
 
 1. Bills game data is ingested and cleaned into an analysis-ready dataset.
-2. An analytics layer computes relevant football metrics and evidence.
-3. Retrieval or web search can add supporting context from articles and reports.
-4. An LLM synthesizes the evidence into a grounded explanation.
+2. A data extractor LLM decides whether local analytics data can help answer a
+   question.
+3. The extractor may generate SQL against approved analytics views.
+4. Application code validates and executes that SQL with guardrails.
+5. An answer LLM synthesizes the returned data into a grounded explanation.
+6. Retrieval or web search can later add supporting context from articles and
+   reports when local data is not enough.
 
 Future extensions may include:
 
@@ -28,7 +32,15 @@ Future extensions may include:
 
 ## Current Status
 
-The repo is currently an early FastAPI scaffold with a basic application entry point in `app/main.py`.
+The repo is currently a FastAPI application with data ingestion, processed
+play-level data, deterministic game metrics, a browser UI, and an initial
+LLM-backed `/ask` endpoint.
+
+The target architecture is changing from a planner-first flow to a
+data-extractor-first flow. Some code may still use the older planner concept
+during the migration, but future work should prioritize extractor-generated SQL,
+SQL validation, deterministic execution, and answer generation grounded in the
+returned rows.
 
 ## Raw Data Ingestion
 
@@ -80,9 +92,26 @@ Get deterministic game metrics for a Bills game:
 curl http://localhost:8000/games/2024/1/metrics
 ```
 
-## Ask A Game Question
+## Ask A Question
 
-The first LLM slice answers questions from the deterministic metric packet only. It does not use play-level evidence, web search, injury reports, articles, quotes, or retrieval context.
+The intended `/ask` workflow is data-extractor first:
+
+1. A data extractor LLM receives the user's question and the approved analytics
+   schema.
+2. It decides whether local structured data can help answer the question.
+3. If data is useful, it generates one SQL query against approved analytics
+   views.
+4. The app validates the SQL before execution.
+5. The app executes valid read-only SQL with row limits.
+6. The answer LLM receives the question, extractor decision, SQL metadata,
+   validation status, and returned rows.
+7. If no local data is needed or available, the answer LLM answers directly or
+   says what context is missing.
+
+The answer flow should not invent plays, injuries, quotes, roster context,
+transaction news, or reporting that was not supplied. Current local data is
+structured play-level NFL data; future retrieval or web search can add outside
+context later.
 
 ### OpenAI
 
@@ -215,18 +244,18 @@ curl -X POST http://localhost:8000/ask \
   -d '{"season":2024,"question":"Why did the Bills beat the Cardinals?"}'
 ```
 
-The `/ask` endpoint first runs a small LLM planner. Questions about one
-specific Bills game are routed through deterministic game metrics. General
-Bills questions are answered directly by the selected LLM without a game metric
-packet. The response includes a `plan` object showing the selected engine.
+In the target workflow, `/ask` first tries to extract useful local data. A
+data-backed response should expose the extractor decision, generated SQL,
+validation result, returned rows, and answer text. If the extractor decides no
+local data is needed, the answer LLM can answer without SQL. If local data is
+insufficient, the answer should state what extra context is missing.
 
-For game-specific questions, mention an opponent for unique matchups, or include
-the week when the Bills played the same opponent more than once:
+Example data-backed question:
 
 ```bash
 curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
-  -d '{"season":2024,"question":"What happened in week 9 against the Dolphins?"}'
+  -d '{"season":2024,"question":"Were the Bills better on offense in the first or second half?"}'
 ```
 
 ### Inspect the LLM debug payload
@@ -238,8 +267,9 @@ UI, start the app with debug payloads enabled:
 BILLS_AI_DEBUG_PAYLOAD=1 uvicorn app.main:app --reload
 ```
 
-Then ask a question in the UI and expand **LLM Debug Payload** beneath the
-metrics panel. The `/ask` JSON response will also include a `debug_payload`
-object with the selected provider, model, instructions, rendered input, and
-token limit. The older `BILLS_AI_DEBUG_PROMPT=1` flag still works as a
-backward-compatible alias.
+Then ask a question in the UI and expand **LLM Debug Payload**. The `/ask` JSON
+response should include a `debug_payload` object with the selected provider,
+model, instructions, rendered input, and token limit. As the extractor-first
+workflow is implemented, debug output should also make the extractor decision,
+generated SQL, validation result, and returned rows inspectable. The older
+`BILLS_AI_DEBUG_PROMPT=1` flag still works as a backward-compatible alias.
