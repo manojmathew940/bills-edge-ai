@@ -175,7 +175,15 @@ def _normalize_bool(value: Any) -> bool:
 
 def _render_data_extraction_prompt(question: str) -> str:
     schema_guide = render_view_schema_guide(BILLS_PLAYS_VIEW)
-    return f"{schema_guide}\n\nQuestion:\n{question}"
+    return (
+        "Use the schema below to choose the exact view and column names for any "
+        "SQL query.\n"
+        "Before writing SQL, identify which listed columns are relevant to the "
+        "question.\n"
+        "Do not reference columns that are not listed in the schema.\n\n"
+        f"{schema_guide}\n\n"
+        f"Question:\n{question}"
+    )
 
 
 def build_data_extraction_debug_payload(
