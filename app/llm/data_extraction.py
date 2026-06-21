@@ -17,11 +17,11 @@ from app.llm.answering import (
 )
 
 
-MAX_DATA_EXTRACTION_OUTPUT_TOKENS = 700
-FALLBACK_REASON = "Extractor did not provide a reason."
-BLANK_SQL_REASON = "Extractor said data was needed but did not provide usable SQL."
+_MAX_DATA_EXTRACTION_OUTPUT_TOKENS = 700
+_FALLBACK_REASON = "Extractor did not provide a reason."
+_BLANK_SQL_REASON = "Extractor said data was needed but did not provide usable SQL."
 
-EXTRACT_DATA_INSTRUCTIONS = f"""
+_EXTRACT_DATA_INSTRUCTIONS = f"""
 You are a data extraction assistant for a Buffalo Bills analytics app.
 
 Your job is to decide whether local structured play data can help answer the
@@ -89,32 +89,32 @@ def run_data_extraction_llm(
     load_dotenv()
 
     client = build_llm_client(provider)
-    prompt = render_data_extraction_prompt(question)
+    prompt = _render_data_extraction_prompt(question)
     model = get_llm_model(provider)
 
     try:
         response = client.responses.create(
             model=model,
-            instructions=EXTRACT_DATA_INSTRUCTIONS,
+            instructions=_EXTRACT_DATA_INSTRUCTIONS,
             input=prompt,
-            max_output_tokens=MAX_DATA_EXTRACTION_OUTPUT_TOKENS,
+            max_output_tokens=_MAX_DATA_EXTRACTION_OUTPUT_TOKENS,
         )
     except OpenAIError as error:
         raise LLMServiceError("The LLM data extractor failed to inspect the question.") from error
 
-    return parse_data_extraction_decision(response.output_text)
+    return _parse_data_extraction_decision(response.output_text)
 
 
-def parse_data_extraction_decision(output_text: str) -> DataExtractionDecision:
+def _parse_data_extraction_decision(output_text: str) -> DataExtractionDecision:
     try:
-        payload = json.loads(extract_json_object(output_text))
+        payload = json.loads(_extract_json_object(output_text))
     except json.JSONDecodeError as error:
         raise LLMServiceError("The LLM data extractor returned invalid JSON.") from error
 
-    needs_data = normalize_bool(payload.get("needs_data"))
-    sql = normalize_optional_text(payload.get("sql"))
-    reason = normalize_optional_text(payload.get("reason")) or FALLBACK_REASON
-    data_not_needed_reason = normalize_optional_text(
+    needs_data = _normalize_bool(payload.get("needs_data"))
+    sql = _normalize_optional_text(payload.get("sql"))
+    reason = _normalize_optional_text(payload.get("reason")) or _FALLBACK_REASON
+    data_not_needed_reason = _normalize_optional_text(
         payload.get("data_not_needed_reason")
     )
 
@@ -129,9 +129,9 @@ def parse_data_extraction_decision(output_text: str) -> DataExtractionDecision:
     elif not sql:
         needs_data = False
         sql = None
-        reason = reason if reason != FALLBACK_REASON else BLANK_SQL_REASON
+        reason = reason if reason != _FALLBACK_REASON else _BLANK_SQL_REASON
         if data_not_needed_reason is None:
-            data_not_needed_reason = BLANK_SQL_REASON
+            data_not_needed_reason = _BLANK_SQL_REASON
 
     return DataExtractionDecision(
         needs_data=needs_data,
@@ -142,7 +142,7 @@ def parse_data_extraction_decision(output_text: str) -> DataExtractionDecision:
     )
 
 
-def extract_json_object(output_text: str) -> str:
+def _extract_json_object(output_text: str) -> str:
     text = output_text.strip()
     if text.startswith("```"):
         text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
@@ -155,7 +155,7 @@ def extract_json_object(output_text: str) -> str:
     return text[start : end + 1]
 
 
-def normalize_optional_text(value: Any) -> str | None:
+def _normalize_optional_text(value: Any) -> str | None:
     if value is None:
         return None
 
@@ -163,7 +163,7 @@ def normalize_optional_text(value: Any) -> str | None:
     return text or None
 
 
-def normalize_bool(value: Any) -> bool:
+def _normalize_bool(value: Any) -> bool:
     if isinstance(value, bool):
         return value
 
@@ -173,7 +173,7 @@ def normalize_bool(value: Any) -> bool:
     return bool(value)
 
 
-def render_data_extraction_prompt(question: str) -> str:
+def _render_data_extraction_prompt(question: str) -> str:
     schema_guide = render_view_schema_guide(BILLS_PLAYS_VIEW)
     return f"{schema_guide}\n\nQuestion:\n{question}"
 
@@ -189,7 +189,7 @@ def build_data_extraction_debug_payload(
         "provider": provider or ("local" if get_llm_base_url() else "openai"),
         "model": get_llm_model(provider),
         "base_url": get_llm_base_url(provider),
-        "instructions": EXTRACT_DATA_INSTRUCTIONS,
-        "input": render_data_extraction_prompt(question),
-        "max_output_tokens": MAX_DATA_EXTRACTION_OUTPUT_TOKENS,
+        "instructions": _EXTRACT_DATA_INSTRUCTIONS,
+        "input": _render_data_extraction_prompt(question),
+        "max_output_tokens": _MAX_DATA_EXTRACTION_OUTPUT_TOKENS,
     }
