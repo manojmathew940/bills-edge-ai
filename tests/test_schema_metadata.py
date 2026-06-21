@@ -6,21 +6,22 @@ import unittest
 
 from app.analytics.schema_metadata import (
     SchemaMetadataError,
-    _view_metadata,
+    _load_validated_schema_metadata,
     render_view_schema_guide,
 )
 
 
 class SchemaMetadataTest(unittest.TestCase):
-    def test_view_metadata_loads_bills_plays_columns(self) -> None:
-        view = _view_metadata("bills_plays")
+    def test_load_validated_schema_metadata_loads_columns(self) -> None:
+        view = _load_validated_schema_metadata()
 
+        self.assertEqual(view["view"], "bills_plays")
         self.assertEqual(view["grain"], "One row per play from a Buffalo Bills game.")
         self.assertIn("season", view["columns"])
         self.assertIn("explosive_play", view["columns"])
 
     def test_render_view_schema_guide_includes_columns(self) -> None:
-        guide = render_view_schema_guide("bills_plays")
+        guide = render_view_schema_guide()
 
         self.assertIn("Approved view: bills_plays", guide)
         self.assertIn("- season (integer): NFL season.", guide)
@@ -33,16 +34,46 @@ class SchemaMetadataTest(unittest.TestCase):
             guide,
         )
 
-    def test_missing_view_raises_clear_error(self) -> None:
-        with self.assertRaisesRegex(SchemaMetadataError, "does not define view"):
-            _view_metadata("missing_view")
+    def test_wrong_view_raises_clear_error(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "schema.yaml"
+            path.write_text(
+                """
+view: other_view
+description: Test view.
+grain: Test grain.
+columns:
+  season:
+    type: integer
+    description: NFL season.
+""".strip()
+            )
+
+            with self.assertRaisesRegex(SchemaMetadataError, "must define view"):
+                _load_validated_schema_metadata(path)
+
+    def test_invalid_column_metadata_raises_clear_error(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "schema.yaml"
+            path.write_text(
+                """
+view: bills_plays
+description: Test view.
+grain: Test grain.
+columns:
+  season: NFL season.
+""".strip()
+            )
+
+            with self.assertRaisesRegex(SchemaMetadataError, "bills_plays.season"):
+                _load_validated_schema_metadata(path)
 
     def test_missing_file_raises_clear_error(self) -> None:
         with TemporaryDirectory() as directory:
             path = Path(directory) / "missing.yaml"
 
             with self.assertRaisesRegex(SchemaMetadataError, "Missing schema"):
-                _view_metadata("bills_plays", path=path)
+                _load_validated_schema_metadata(path)
 
 
 if __name__ == "__main__":

@@ -26,35 +26,42 @@ def _load_schema_metadata(path: Path = _SCHEMA_METADATA_PATH) -> dict[str, Any]:
     return payload
 
 
-def _view_metadata(
-    view_name: str = BILLS_PLAYS_VIEW,
-    *,
+def _validate_schema_metadata(schema: dict[str, Any]) -> None:
+    view_name = schema.get("view")
+    if view_name != BILLS_PLAYS_VIEW:
+        raise SchemaMetadataError(
+            f"Schema metadata must define view: {BILLS_PLAYS_VIEW}"
+        )
+
+    columns = schema.get("columns")
+    if not isinstance(columns, dict) or not columns:
+        raise SchemaMetadataError(
+            f"Schema metadata for {BILLS_PLAYS_VIEW} has no columns."
+        )
+
+    for column_name, metadata in columns.items():
+        if not isinstance(metadata, dict):
+            raise SchemaMetadataError(
+                f"Schema metadata for {BILLS_PLAYS_VIEW}.{column_name} is invalid."
+            )
+
+
+def _load_validated_schema_metadata(
     path: Path = _SCHEMA_METADATA_PATH,
 ) -> dict[str, Any]:
-    payload = _load_schema_metadata(path)
-    views = payload.get("views")
-    if not isinstance(views, dict) or view_name not in views:
-        raise SchemaMetadataError(f"Schema metadata does not define view: {view_name}")
-
-    view = views[view_name]
-    if not isinstance(view, dict):
-        raise SchemaMetadataError(f"Schema metadata for {view_name} is invalid.")
-
-    columns = view.get("columns")
-    if not isinstance(columns, dict) or not columns:
-        raise SchemaMetadataError(f"Schema metadata for {view_name} has no columns.")
-
-    return view
+    schema = _load_schema_metadata(path)
+    _validate_schema_metadata(schema)
+    return schema
 
 
-def render_view_schema_guide(view_name: str = BILLS_PLAYS_VIEW) -> str:
-    view = _view_metadata(view_name)
-    description = view.get("description", "")
-    grain = view.get("grain", "")
-    columns = view["columns"]
+def render_view_schema_guide() -> str:
+    schema = _load_validated_schema_metadata()
+    description = schema.get("description", "")
+    grain = schema.get("grain", "")
+    columns = schema["columns"]
 
     lines = [
-        f"Approved view: {view_name}",
+        f"Approved view: {BILLS_PLAYS_VIEW}",
         f"Description: {description}",
         f"Grain: {grain}",
         "",
@@ -62,11 +69,6 @@ def render_view_schema_guide(view_name: str = BILLS_PLAYS_VIEW) -> str:
     ]
 
     for column_name, metadata in columns.items():
-        if not isinstance(metadata, dict):
-            raise SchemaMetadataError(
-                f"Schema metadata for {view_name}.{column_name} is invalid."
-            )
-
         column_type = metadata.get("type", "unknown")
         description = metadata.get("description", "")
         lines.append(f"- {column_name} ({column_type}): {description}")

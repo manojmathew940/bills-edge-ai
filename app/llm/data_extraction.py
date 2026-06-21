@@ -174,7 +174,7 @@ def _normalize_bool(value: Any) -> bool:
 
 
 def _render_data_extraction_prompt(question: str) -> str:
-    schema_guide = render_view_schema_guide(BILLS_PLAYS_VIEW)
+    schema_guide = render_view_schema_guide()
     return (
         "Use the schema below to choose the exact view and column names for any "
         "SQL query.\n"
