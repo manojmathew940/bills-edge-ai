@@ -1,0 +1,438 @@
+views:
+  bills_plays:
+    description: Cleaned Buffalo Bills play-level analytics view built from nflverse play-by-play data.
+    grain: One row per play from a Buffalo Bills game.
+    approved_for_llm_sql: true
+    columns:
+      season:
+        type: integer
+        description: NFL season.
+      season_type:
+        type: string
+        description: Season segment, such as regular season or postseason.
+      week:
+        type: integer
+        description: NFL week number.
+      game_id:
+        type: string
+        description: Unique nflverse game identifier.
+      game_date:
+        type: string
+        description: Date of the game.
+      home_team:
+        type: string
+        description: Home team abbreviation.
+      away_team:
+        type: string
+        description: Away team abbreviation.
+      location:
+        type: string
+        description: Game location classification from the source data.
+      result:
+        type: integer
+        description: Final point differential from the home-team perspective in the source data.
+      home_score:
+        type: integer
+        description: Final score for the home team.
+      away_score:
+        type: integer
+        description: Final score for the away team.
+      div_game:
+        type: integer
+        description: Flag indicating whether the game was a division matchup.
+      roof:
+        type: string
+        description: Stadium roof type.
+      surface:
+        type: string
+        description: Playing surface.
+      temp:
+        type: float
+        description: Game-time temperature when available.
+      wind:
+        type: float
+        description: Game-time wind speed when available.
+      play_id:
+        type: integer
+        description: Unique play identifier within a game.
+      drive:
+        type: float
+        description: Source drive number.
+      fixed_drive:
+        type: integer
+        description: Normalized drive number from the source data.
+      fixed_drive_result:
+        type: string
+        description: Normalized result of the drive.
+      qtr:
+        type: integer
+        description: Quarter number.
+      time:
+        type: string
+        description: Game clock at the start of the play.
+      quarter_seconds_remaining:
+        type: float
+        description: Seconds remaining in the current quarter.
+      half_seconds_remaining:
+        type: float
+        description: Seconds remaining in the current half.
+      game_seconds_remaining:
+        type: float
+        description: Seconds remaining in the game.
+      down:
+        type: float
+        description: Down number at the start of the play.
+      ydstogo:
+        type: integer
+        description: Yards needed for a first down.
+      yardline_100:
+        type: float
+        description: Yards from the opponent end zone from the possession team's perspective.
+      yrdln:
+        type: string
+        description: Text representation of field position.
+      goal_to_go:
+        type: integer
+        description: Flag indicating a goal-to-go situation.
+      desc:
+        type: string
+        description: Source play description.
+      play_type:
+        type: string
+        description: Normalized play type.
+      play_type_nfl:
+        type: string
+        description: NFL source play type.
+      posteam:
+        type: string
+        description: Team in possession on the play.
+      posteam_type:
+        type: string
+        description: Whether the possession team is home or away.
+      defteam:
+        type: string
+        description: Defensive team on the play.
+      side_of_field:
+        type: string
+        description: Team side of field where the ball is spotted.
+      posteam_score:
+        type: float
+        description: Possession team's score before the play.
+      defteam_score:
+        type: float
+        description: Defensive team's score before the play.
+      score_differential:
+        type: float
+        description: Possession team's score differential before the play.
+      posteam_score_post:
+        type: float
+        description: Possession team's score after the play.
+      defteam_score_post:
+        type: float
+        description: Defensive team's score after the play.
+      score_differential_post:
+        type: float
+        description: Possession team's score differential after the play.
+      total_home_score:
+        type: integer
+        description: Home team total score after the play.
+      total_away_score:
+        type: integer
+        description: Away team total score after the play.
+      yards_gained:
+        type: float
+        description: Yards gained on the play.
+      first_down:
+        type: float
+        description: Flag indicating a first down was gained.
+      touchdown:
+        type: float
+        description: Flag indicating a touchdown occurred on the play.
+      td_team:
+        type: string
+        description: Team credited with the touchdown.
+      interception:
+        type: float
+        description: Flag indicating an interception occurred.
+      fumble:
+        type: float
+        description: Flag indicating a fumble occurred.
+      fumble_lost:
+        type: float
+        description: Flag indicating the offense lost a fumble.
+      sack:
+        type: float
+        description: Flag indicating a sack occurred.
+      qb_hit:
+        type: float
+        description: Flag indicating the quarterback was hit.
+      penalty:
+        type: float
+        description: Flag indicating a penalty occurred.
+      penalty_team:
+        type: string
+        description: Team charged with the penalty.
+      penalty_type:
+        type: string
+        description: Penalty type.
+      penalty_yards:
+        type: float
+        description: Penalty yards assessed.
+      safety:
+        type: float
+        description: Flag indicating a safety occurred.
+      tackled_for_loss:
+        type: float
+        description: Flag indicating a tackle for loss occurred.
+      third_down_converted:
+        type: float
+        description: Flag indicating a third down was converted.
+      third_down_failed:
+        type: float
+        description: Flag indicating a third down failed.
+      fourth_down_converted:
+        type: float
+        description: Flag indicating a fourth down was converted.
+      fourth_down_failed:
+        type: float
+        description: Flag indicating a fourth down failed.
+      rush_attempt:
+        type: float
+        description: Flag indicating a designed rush attempt or scramble counted as a rush.
+      pass_attempt:
+        type: float
+        description: Flag indicating a pass attempt.
+      complete_pass:
+        type: float
+        description: Flag indicating a completed pass.
+      incomplete_pass:
+        type: float
+        description: Flag indicating an incomplete pass.
+      qb_dropback:
+        type: float
+        description: Flag indicating a quarterback dropback.
+      shotgun:
+        type: integer
+        description: Flag indicating the offense aligned in shotgun.
+      no_huddle:
+        type: integer
+        description: Flag indicating a no-huddle play.
+      qb_scramble:
+        type: integer
+        description: Flag indicating a quarterback scramble.
+      qb_kneel:
+        type: integer
+        description: Flag indicating a quarterback kneel.
+      qb_spike:
+        type: integer
+        description: Flag indicating a quarterback spike.
+      pass_length:
+        type: string
+        description: Pass length bucket, such as short or deep.
+      pass_location:
+        type: string
+        description: Pass location, such as left, middle, or right.
+      air_yards:
+        type: float
+        description: Air yards on a pass attempt.
+      yards_after_catch:
+        type: float
+        description: Yards after catch on a completed pass.
+      run_location:
+        type: string
+        description: Run location, such as left, middle, or right.
+      run_gap:
+        type: string
+        description: Run gap.
+      passing_yards:
+        type: float
+        description: Passing yards credited on the play.
+      receiving_yards:
+        type: float
+        description: Receiving yards credited on the play.
+      rushing_yards:
+        type: float
+        description: Rushing yards credited on the play.
+      passer_player_id:
+        type: string
+        description: Player ID for the passer.
+      passer_player_name:
+        type: string
+        description: Player name for the passer.
+      receiver_player_id:
+        type: string
+        description: Player ID for the targeted or credited receiver.
+      receiver_player_name:
+        type: string
+        description: Player name for the targeted or credited receiver.
+      rusher_player_id:
+        type: string
+        description: Player ID for the rusher.
+      rusher_player_name:
+        type: string
+        description: Player name for the rusher.
+      special_teams_play:
+        type: integer
+        description: Flag indicating a special teams play.
+      special:
+        type: integer
+        description: Source special-teams flag.
+      kickoff_attempt:
+        type: float
+        description: Flag indicating a kickoff attempt.
+      punt_attempt:
+        type: float
+        description: Flag indicating a punt attempt.
+      field_goal_attempt:
+        type: float
+        description: Flag indicating a field goal attempt.
+      extra_point_attempt:
+        type: float
+        description: Flag indicating an extra point attempt.
+      two_point_attempt:
+        type: float
+        description: Flag indicating a two-point conversion attempt.
+      field_goal_result:
+        type: string
+        description: Field goal attempt result.
+      extra_point_result:
+        type: string
+        description: Extra point attempt result.
+      two_point_conv_result:
+        type: string
+        description: Two-point conversion attempt result.
+      kick_distance:
+        type: float
+        description: Kick distance in yards.
+      return_team:
+        type: string
+        description: Team credited with a return.
+      return_yards:
+        type: float
+        description: Return yards on the play.
+      drive_play_count:
+        type: float
+        description: Number of plays in the drive.
+      drive_time_of_possession:
+        type: string
+        description: Drive time of possession.
+      drive_first_downs:
+        type: float
+        description: Number of first downs on the drive.
+      drive_inside20:
+        type: float
+        description: Flag indicating the drive entered the opponent 20-yard line.
+      drive_ended_with_score:
+        type: float
+        description: Flag indicating the drive ended with a score.
+      drive_quarter_start:
+        type: float
+        description: Quarter in which the drive started.
+      drive_quarter_end:
+        type: float
+        description: Quarter in which the drive ended.
+      drive_yards_penalized:
+        type: float
+        description: Penalty yards on the drive.
+      drive_start_transition:
+        type: string
+        description: How possession began for the drive.
+      drive_end_transition:
+        type: string
+        description: How possession ended for the drive.
+      drive_game_clock_start:
+        type: string
+        description: Game clock when the drive started.
+      drive_game_clock_end:
+        type: string
+        description: Game clock when the drive ended.
+      drive_start_yard_line:
+        type: string
+        description: Field position where the drive started.
+      drive_end_yard_line:
+        type: string
+        description: Field position where the drive ended.
+      drive_play_id_started:
+        type: float
+        description: Play ID where the drive started.
+      drive_play_id_ended:
+        type: float
+        description: Play ID where the drive ended.
+      epa:
+        type: float
+        description: Expected points added for the play.
+      wp:
+        type: float
+        description: Win probability for the possession team before the play.
+      wpa:
+        type: float
+        description: Win probability added by the play.
+      home_wp:
+        type: float
+        description: Home team win probability.
+      away_wp:
+        type: float
+        description: Away team win probability.
+      success:
+        type: float
+        description: Flag indicating whether the play was successful by nflverse success definition.
+      ep:
+        type: float
+        description: Expected points before the play.
+      cp:
+        type: float
+        description: Completion probability for a pass when available.
+      cpoe:
+        type: float
+        description: Completion percentage over expected for a pass when available.
+      xpass:
+        type: float
+        description: Expected pass probability.
+      pass_oe:
+        type: float
+        description: Pass rate over expected.
+      qb_epa:
+        type: float
+        description: Quarterback expected points added on the play.
+      opponent:
+        type: string
+        description: Opponent team abbreviation from the Bills perspective.
+      is_home:
+        type: boolean
+        description: True when Buffalo was the home team.
+      bills_on_offense:
+        type: boolean
+        description: True when Buffalo was the possession team.
+      bills_on_defense:
+        type: boolean
+        description: True when Buffalo was the defensive team.
+      bills_score_before:
+        type: integer
+        description: Buffalo score before the play.
+      opponent_score_before:
+        type: integer
+        description: Opponent score before the play.
+      bills_score_after:
+        type: integer
+        description: Buffalo score after the play.
+      opponent_score_after:
+        type: integer
+        description: Opponent score after the play.
+      bills_score_diff_before:
+        type: integer
+        description: Buffalo score differential before the play.
+      bills_score_diff_after:
+        type: integer
+        description: Buffalo score differential after the play.
+      turnover:
+        type: boolean
+        description: True when the play produced an interception or lost fumble.
+      third_down_attempt:
+        type: boolean
+        description: True when the play was a third-down attempt.
+      red_zone_play:
+        type: boolean
+        description: True when the play started at or inside the opponent 20-yard line.
+      explosive_play:
+        type: boolean
+        description: True for explosive plays, defined as pass gains of at least 20 yards or rush gains of at least 10 yards.
