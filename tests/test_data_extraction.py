@@ -4,6 +4,7 @@ import unittest
 
 from app.llm.answering import LLMServiceError
 from app.llm.data_extraction import (
+    EXTRACT_DATA_INSTRUCTIONS,
     parse_data_extraction_decision,
     render_data_extraction_prompt,
 )
@@ -20,6 +21,14 @@ class DataExtractionTest(unittest.TestCase):
             prompt,
         )
         self.assertIn("Question:\nHow did the Bills offense perform?", prompt)
+        self.assertNotIn("Example JSON when data is useful", prompt)
+
+    def test_instructions_include_extraction_examples(self) -> None:
+        self.assertIn("Example JSON when data is useful", EXTRACT_DATA_INSTRUCTIONS)
+        self.assertIn(
+            "Example JSON when local data is not useful",
+            EXTRACT_DATA_INSTRUCTIONS,
+        )
 
     def test_parses_valid_data_request(self) -> None:
         decision = parse_data_extraction_decision(

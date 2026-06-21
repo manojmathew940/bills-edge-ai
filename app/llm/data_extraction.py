@@ -48,9 +48,7 @@ SQL rules:
 If the question needs current news, injuries, transactions, roster context,
 quotes, reporting, or information not represented in play-level data, return
 needs_data=false and explain what local data is missing.
-""".strip()
 
-EXTRACTION_EXAMPLES = f"""
 Example JSON when data is useful:
 {{
   "needs_data": true,
@@ -177,7 +175,7 @@ def normalize_bool(value: Any) -> bool:
 
 def render_data_extraction_prompt(question: str) -> str:
     schema_guide = render_view_schema_guide(BILLS_PLAYS_VIEW)
-    return f"{schema_guide}\n\n{EXTRACTION_EXAMPLES}\n\nQuestion:\n{question}"
+    return f"{schema_guide}\n\nQuestion:\n{question}"
 
 
 def build_data_extraction_debug_payload(
