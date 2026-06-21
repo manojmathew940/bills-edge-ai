@@ -6,14 +6,14 @@ import unittest
 
 from app.analytics.schema_metadata import (
     SchemaMetadataError,
+    _view_metadata,
     render_view_schema_guide,
-    view_metadata,
 )
 
 
 class SchemaMetadataTest(unittest.TestCase):
     def test_view_metadata_loads_bills_plays_columns(self) -> None:
-        view = view_metadata("bills_plays")
+        view = _view_metadata("bills_plays")
 
         self.assertEqual(view["grain"], "One row per play from a Buffalo Bills game.")
         self.assertIn("season", view["columns"])
@@ -35,14 +35,14 @@ class SchemaMetadataTest(unittest.TestCase):
 
     def test_missing_view_raises_clear_error(self) -> None:
         with self.assertRaisesRegex(SchemaMetadataError, "does not define view"):
-            view_metadata("missing_view")
+            _view_metadata("missing_view")
 
     def test_missing_file_raises_clear_error(self) -> None:
         with TemporaryDirectory() as directory:
             path = Path(directory) / "missing.yaml"
 
             with self.assertRaisesRegex(SchemaMetadataError, "Missing schema"):
-                view_metadata("bills_plays", path=path)
+                _view_metadata("bills_plays", path=path)
 
 
 if __name__ == "__main__":

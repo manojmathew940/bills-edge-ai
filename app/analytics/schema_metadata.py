@@ -8,14 +8,14 @@ import yaml
 from app.analytics.sql_views import BILLS_PLAYS_VIEW
 
 
-SCHEMA_METADATA_PATH = Path("docs/bills_plays_schema.yaml")
+_SCHEMA_METADATA_PATH = Path("docs/bills_plays_schema.yaml")
 
 
 class SchemaMetadataError(RuntimeError):
     """Raised when analytics schema metadata cannot be loaded."""
 
 
-def load_schema_metadata(path: Path = SCHEMA_METADATA_PATH) -> dict[str, Any]:
+def _load_schema_metadata(path: Path = _SCHEMA_METADATA_PATH) -> dict[str, Any]:
     if not path.exists():
         raise SchemaMetadataError(f"Missing schema metadata file: {path}")
 
@@ -26,12 +26,12 @@ def load_schema_metadata(path: Path = SCHEMA_METADATA_PATH) -> dict[str, Any]:
     return payload
 
 
-def view_metadata(
+def _view_metadata(
     view_name: str = BILLS_PLAYS_VIEW,
     *,
-    path: Path = SCHEMA_METADATA_PATH,
+    path: Path = _SCHEMA_METADATA_PATH,
 ) -> dict[str, Any]:
-    payload = load_schema_metadata(path)
+    payload = _load_schema_metadata(path)
     views = payload.get("views")
     if not isinstance(views, dict) or view_name not in views:
         raise SchemaMetadataError(f"Schema metadata does not define view: {view_name}")
@@ -48,7 +48,7 @@ def view_metadata(
 
 
 def render_view_schema_guide(view_name: str = BILLS_PLAYS_VIEW) -> str:
-    view = view_metadata(view_name)
+    view = _view_metadata(view_name)
     description = view.get("description", "")
     grain = view.get("grain", "")
     columns = view["columns"]
