@@ -80,6 +80,11 @@ The target question-answering architecture is data-extractor first:
 - Add comments only where logic is non-obvious
 - Avoid deep inheritance or complex patterns
 - Keep dependencies minimal
+- Use a leading underscore for module-private runtime helpers and constants
+- Keep non-underscore functions/classes for intended module APIs used by other
+  app modules, routes, scripts, or stable external callers
+- Tests may import underscored helpers when they are intentionally white-box
+  testing important internal behavior, but app runtime code should not
 
 ---
 
