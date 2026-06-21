@@ -14,6 +14,14 @@ class DataExtractionTest(unittest.TestCase):
     def test_render_prompt_includes_schema_metadata(self) -> None:
         prompt = _render_data_extraction_prompt("How did the Bills offense perform?")
 
+        self.assertIn(
+            "Use the schema below to choose the exact view and column names",
+            prompt,
+        )
+        self.assertIn(
+            "Do not reference columns that are not listed in the schema.",
+            prompt,
+        )
         self.assertIn("Approved view: bills_plays", prompt)
         self.assertIn("- season (integer): NFL season.", prompt)
         self.assertIn(
