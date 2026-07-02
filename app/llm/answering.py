@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from dotenv import load_dotenv
 from openai import OpenAI, OpenAIError
+
+from app.analytics.sql_execution import AnalyticsSqlResult
+
+if TYPE_CHECKING:
+    from app.llm.data_extraction import DataExtractionDecision
 
 
 DEFAULT_MODEL = "gpt-5.5"
@@ -33,6 +38,21 @@ Answer the user's question directly. Keep the answer concise and specific.
 If the question needs specific game, player, roster, injury, transaction, or
 news data that was not supplied, say what extra context is needed instead of
 guessing.
+""".strip()
+
+ANSWER_QUESTION_INSTRUCTIONS = """
+You are a Buffalo Bills football analyst.
+
+Answer the user's question using only the supplied local analytics data when it
+is present. If no local analytics data was requested, answer directly only when
+the question can be answered without local data or current outside context.
+
+If the supplied data is empty or insufficient, say what is missing. Do not
+invent current news, injuries, quotes, roster moves, reporting, play details, or
+other context that was not provided.
+
+Be clear about direct evidence from the data versus interpretation. Keep the
+answer concise and specific.
 """.strip()
 
 
@@ -93,9 +113,39 @@ def build_llm_client(provider: str | None = None) -> OpenAI:
 
     return OpenAI(**client_options)
 
-#TODO: Test it out
-#TODO: Seems like there is some duplication here. 
-#Consider looking at combing them. 
+
+def answer_question(
+    question: str,
+    extraction_decision: DataExtractionDecision,
+    analytics_result: AnalyticsSqlResult | None,
+    *,
+    provider: str | None = None,
+) -> str:
+    load_dotenv()
+
+    _validate_answer_question_inputs(extraction_decision, analytics_result)
+
+    client = build_llm_client(provider)
+    prompt = _render_answer_question_prompt(
+        question,
+        extraction_decision,
+        analytics_result,
+    )
+    model = get_llm_model(provider)
+
+    try:
+        response = client.responses.create(
+            model=model,
+            instructions=ANSWER_QUESTION_INSTRUCTIONS,
+            input=prompt,
+            max_output_tokens=MAX_ANSWER_OUTPUT_TOKENS,
+        )
+    except OpenAIError as error:
+        raise LLMServiceError("The LLM service failed to answer the question.") from error
+
+    return response.output_text
+
+
 def answer_game_question(
     question: str,
     metrics: dict[str, Any],
@@ -153,6 +203,50 @@ def render_answer_game_prompt(question: str, metrics: dict[str, Any]) -> str:
     )
 
 
+def _render_answer_question_prompt(
+    question: str,
+    extraction_decision: DataExtractionDecision,
+    analytics_result: AnalyticsSqlResult | None,
+) -> str:
+    _validate_answer_question_inputs(extraction_decision, analytics_result)
+
+    # Extraction decision is also added to prompt when analytics_result is None
+    analytics_context_json = json.dumps(
+        _renderable_analytics_context(extraction_decision, analytics_result),
+        indent=2,
+        sort_keys=True,
+    )
+
+    return (
+        f"Question:\n{question}\n\n"
+        "Local analytics context JSON:\n"
+        f"{analytics_context_json}"
+    )
+
+
+def build_answer_debug_payload(
+    question: str,
+    extraction_decision: DataExtractionDecision,
+    analytics_result: AnalyticsSqlResult | None,
+    *,
+    provider: str | None = None,
+) -> dict[str, Any]:
+    load_dotenv()
+
+    return {
+        "provider": provider or ("local" if get_llm_base_url() else "openai"),
+        "model": get_llm_model(provider),
+        "base_url": get_llm_base_url(provider),
+        "instructions": ANSWER_QUESTION_INSTRUCTIONS,
+        "input": _render_answer_question_prompt(
+            question,
+            extraction_decision,
+            analytics_result,
+        ),
+        "max_output_tokens": MAX_ANSWER_OUTPUT_TOKENS,
+    }
+
+
 def build_answer_game_debug_payload(
     question: str,
     metrics: dict[str, Any],
@@ -185,4 +279,41 @@ def build_answer_direct_debug_payload(
         "instructions": ANSWER_DIRECT_INSTRUCTIONS,
         "input": f"Question:\n{question}",
         "max_output_tokens": MAX_ANSWER_OUTPUT_TOKENS,
+    }
+
+
+def _validate_answer_question_inputs(
+    extraction_decision: DataExtractionDecision,
+    analytics_result: AnalyticsSqlResult | None,
+) -> None:
+    if analytics_result is None:
+        if extraction_decision.needs_data:
+            raise ValueError(
+                "analytics_result is required when extraction_decision.needs_data is true."
+            )
+        return
+
+    if not analytics_result.is_valid:
+        raise ValueError("Invalid SQL results must be handled before answer generation.")
+
+
+def _renderable_analytics_context(
+    extraction_decision: DataExtractionDecision,
+    analytics_result: AnalyticsSqlResult | None,
+) -> dict[str, Any]:
+    if analytics_result is None:
+        return {
+            "status": "no_local_analytics_data_requested",
+            "reason": extraction_decision.data_not_needed_reason
+            or extraction_decision.reason,
+            "result": None,
+        }
+
+    return {
+        "status": "local_analytics_data_available",
+        "result": {
+            "columns": analytics_result.columns,
+            "rows": analytics_result.rows,
+            "row_count": len(analytics_result.rows),
+        },
     }
