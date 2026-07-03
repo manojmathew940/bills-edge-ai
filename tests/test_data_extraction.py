@@ -3,9 +3,14 @@ from __future__ import annotations
 import unittest
 from unittest.mock import Mock, patch
 
+from openai import OpenAIError
+
 from app.llm.answering import LLMServiceError
 from app.llm.data_extraction import (
+    _DATA_EXTRACTION_RESPONSE_FORMAT,
+    _DATA_EXTRACTION_REASONING,
     _EXTRACT_DATA_INSTRUCTIONS,
+    _raise_if_response_incomplete,
     _print_data_extraction_response_debug,
     _parse_data_extraction_decision,
     _render_data_extraction_prompt,
@@ -43,7 +48,7 @@ class DataExtractionTest(unittest.TestCase):
 
     @patch("app.llm.data_extraction.get_llm_model", return_value="test-model")
     @patch("app.llm.data_extraction.build_llm_client")
-    def test_run_data_extraction_requests_json_object(
+    def test_run_data_extraction_requests_json_schema(
         self,
         build_llm_client: Mock,
         get_llm_model: Mock,
@@ -66,7 +71,23 @@ class DataExtractionTest(unittest.TestCase):
         call_kwargs = client.responses.create.call_args.kwargs
         self.assertEqual(call_kwargs["model"], "test-model")
         self.assertEqual(call_kwargs["instructions"], _EXTRACT_DATA_INSTRUCTIONS)
-        self.assertEqual(call_kwargs["text"], {"format": {"type": "json_object"}})
+        self.assertEqual(call_kwargs["max_output_tokens"], 2000)
+        self.assertEqual(call_kwargs["reasoning"], _DATA_EXTRACTION_REASONING)
+        self.assertEqual(call_kwargs["text"], {"format": _DATA_EXTRACTION_RESPONSE_FORMAT})
+
+    @patch("app.llm.data_extraction.get_llm_model", return_value="test-model")
+    @patch("app.llm.data_extraction.build_llm_client")
+    def test_run_data_extraction_includes_provider_error(
+        self,
+        build_llm_client: Mock,
+        get_llm_model: Mock,
+    ) -> None:
+        client = Mock()
+        client.responses.create.side_effect = OpenAIError("unsupported response format")
+        build_llm_client.return_value = client
+
+        with self.assertRaisesRegex(LLMServiceError, "unsupported response format"):
+            run_data_extraction_llm("Who are the Bills?", provider="local")
 
     @patch.dict("os.environ", {}, clear=True)
     @patch("builtins.print")
@@ -74,6 +95,12 @@ class DataExtractionTest(unittest.TestCase):
         _print_data_extraction_response_debug(Mock(output_text="{}"))
 
         print_mock.assert_not_called()
+
+    def test_incomplete_response_raises_clear_error(self) -> None:
+        response = Mock(incomplete_details={"reason": "max_output_tokens"})
+
+        with self.assertRaisesRegex(LLMServiceError, "max_output_tokens"):
+            _raise_if_response_incomplete(response)
 
     def test_parses_valid_data_request(self) -> None:
         decision = _parse_data_extraction_decision(

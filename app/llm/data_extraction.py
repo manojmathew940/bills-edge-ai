@@ -18,9 +18,33 @@ from app.llm.answering import (
 )
 
 
-_MAX_DATA_EXTRACTION_OUTPUT_TOKENS = 700
+_MAX_DATA_EXTRACTION_OUTPUT_TOKENS = 2000
+_DATA_EXTRACTION_REASONING = {"effort": "low"}
 _FALLBACK_REASON = "Extractor did not provide a reason."
 _BLANK_SQL_REASON = "Extractor said data was needed but did not provide usable SQL."
+_DATA_EXTRACTION_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "name": "data_extraction_decision",
+    "strict": True,
+    "schema": {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "needs_data": {"type": "boolean"},
+            "sql": {"type": ["string", "null"]},
+            "reason": {"type": "string"},
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "data_not_needed_reason": {"type": ["string", "null"]},
+        },
+        "required": [
+            "needs_data",
+            "sql",
+            "reason",
+            "confidence",
+            "data_not_needed_reason",
+        ],
+    },
+}
 
 _EXTRACT_DATA_INSTRUCTIONS = f"""
 You are a data extraction assistant for a Buffalo Bills analytics app.
@@ -99,10 +123,13 @@ def run_data_extraction_llm(
             instructions=_EXTRACT_DATA_INSTRUCTIONS,
             input=prompt,
             max_output_tokens=_MAX_DATA_EXTRACTION_OUTPUT_TOKENS,
-            text={"format": {"type": "json_object"}},
+            reasoning=_DATA_EXTRACTION_REASONING,
+            text={"format": _DATA_EXTRACTION_RESPONSE_FORMAT},
         )
     except OpenAIError as error:
-        raise LLMServiceError("The LLM data extractor failed to inspect the question.") from error
+        raise LLMServiceError(
+            f"The LLM data extractor failed to inspect the question: {error}"
+        ) from error
 
     _print_data_extraction_response_debug(response)
 
@@ -204,7 +231,8 @@ def build_data_extraction_debug_payload(
         "instructions": _EXTRACT_DATA_INSTRUCTIONS,
         "input": _render_data_extraction_prompt(question),
         "max_output_tokens": _MAX_DATA_EXTRACTION_OUTPUT_TOKENS,
-        "text": {"format": {"type": "json_object"}},
+        "reasoning": _DATA_EXTRACTION_REASONING,
+        "text": {"format": _DATA_EXTRACTION_RESPONSE_FORMAT},
     }
 
 

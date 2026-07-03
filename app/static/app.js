@@ -87,6 +87,65 @@ function renderInlineMarkdown(value) {
     .replace(/\*(.+?)\*/g, "<em>$1</em>");
 }
 
+function parseMarkdownTableRow(line) {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith("|") || !trimmed.endsWith("|")) {
+    return null;
+  }
+
+  return trimmed
+    .slice(1, -1)
+    .split("|")
+    .map((cell) => cell.trim());
+}
+
+function isMarkdownTableSeparator(line) {
+  const cells = parseMarkdownTableRow(line);
+  return Boolean(cells && cells.every((cell) => /^:?-{3,}:?$/.test(cell)));
+}
+
+function renderMarkdownTable(lines) {
+  if (lines.length < 3 || !isMarkdownTableSeparator(lines[1])) {
+    return null;
+  }
+
+  const headers = parseMarkdownTableRow(lines[0]);
+  const rows = lines.slice(2).map(parseMarkdownTableRow);
+  if (!headers || rows.some((row) => !row || row.length !== headers.length)) {
+    return null;
+  }
+
+  const headerHtml = headers
+    .map((header) => `<th>${renderInlineMarkdown(header)}</th>`)
+    .join("");
+  const rowHtml = rows
+    .map((row) => {
+      const cells = row
+        .map((cell) => `<td>${renderInlineMarkdown(cell)}</td>`)
+        .join("");
+      return `<tr>${cells}</tr>`;
+    })
+    .join("");
+
+  return `
+    <div class="answer-table-wrap">
+      <table class="answer-table">
+        <thead><tr>${headerHtml}</tr></thead>
+        <tbody>${rowHtml}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function splitAnswerBlockLines(block) {
+  return block
+    .trim()
+    .replace(/\|\s+\|/g, "|\n|")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 function renderAnswer(value) {
   const text = String(value || "").trim();
 
@@ -99,7 +158,12 @@ function renderAnswer(value) {
   const blocks = text.split(/\n{2,}/);
   const html = blocks
     .map((block) => {
-      const lines = block.split("\n");
+      const lines = splitAnswerBlockLines(block);
+      const table = renderMarkdownTable(lines);
+      if (table) {
+        return table;
+      }
+
       const isList = lines.every((line) => line.trim().startsWith("- "));
 
       if (isList) {
