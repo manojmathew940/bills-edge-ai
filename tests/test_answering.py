@@ -48,6 +48,11 @@ class AnsweringTest(unittest.TestCase):
         self.assertNotIn("SELECT season", prompt)
         self.assertNotIn("validation_reason", prompt)
 
+    def test_instructions_prefer_tables_for_multi_row_results(self) -> None:
+        self.assertIn("Markdown table", ANSWER_QUESTION_INSTRUCTIONS)
+        self.assertIn("Preserve the returned row ordering", ANSWER_QUESTION_INSTRUCTIONS)
+        self.assertIn("ranked or grouped result sets", ANSWER_QUESTION_INSTRUCTIONS)
+
     def test_render_prompt_includes_no_data_state(self) -> None:
         decision = DataExtractionDecision(
             needs_data=False,

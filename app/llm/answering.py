@@ -30,6 +30,10 @@ If the supplied data is empty or insufficient, say what is missing. Do not
 invent current news, injuries, quotes, roster moves, reporting, play details, or
 other context that was not provided.
 
+When the analytics result contains multiple rows with comparable columns,
+present the result as a Markdown table. Preserve the returned row ordering. Do
+not convert ranked or grouped result sets into prose lists.
+
 Be clear about direct evidence from the data versus interpretation. Keep the
 answer concise and specific.
 """.strip()
