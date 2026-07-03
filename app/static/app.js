@@ -10,8 +10,6 @@ const modelSelect = document.querySelector("#model");
 const providerStatus = document.querySelector("#provider-status");
 const groundingBadge = document.querySelector("#grounding-badge");
 const groundingDetail = document.querySelector("#grounding-detail");
-const gameSummary = document.querySelector("#game-summary");
-const summaryMetrics = document.querySelector("#summary-metrics");
 
 function setLoading(isLoading) {
   askButton.disabled = isLoading;
@@ -64,8 +62,6 @@ function setGrounding(label, style, detail) {
 function resetResult() {
   clearError();
   setGrounding("Analyzing", "neutral", "");
-  gameSummary.hidden = true;
-  summaryMetrics.replaceChildren();
   analyticsBox.textContent = "{}";
   setDebugPayload(null);
   answerBox.textContent = "";
@@ -185,9 +181,6 @@ function renderGrounding(data) {
   const analytics = data.analytics || {};
   const rows = Array.isArray(analytics.rows) ? analytics.rows : [];
 
-  gameSummary.hidden = true;
-  summaryMetrics.replaceChildren();
-
   if (analytics.is_valid === true && rows.length > 0) {
     setGrounding(
       "SQL analytics",
@@ -275,7 +268,6 @@ form.addEventListener("submit", async (event) => {
     setDebugPayload(data.debug_payload || data.debug_prompt);
     setProviderStatus(data.provider || payload.provider);
   } catch (error) {
-    gameSummary.hidden = true;
     setGrounding("Unavailable", "clarify", "The analysis could not be completed.");
     answerBox.textContent = "No answer is available for this request.";
     answerBox.classList.add("empty");
