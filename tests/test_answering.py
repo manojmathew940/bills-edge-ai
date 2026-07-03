@@ -9,9 +9,9 @@ from app.analytics.sql_execution import AnalyticsSqlResult
 from app.llm.answering import (
     ANSWER_QUESTION_INSTRUCTIONS,
     LLMServiceError,
+    _render_answer_question_prompt,
     answer_question,
     build_answer_debug_payload,
-    render_answer_question_prompt,
 )
 from app.llm.data_extraction import DataExtractionDecision
 
@@ -32,7 +32,7 @@ class AnsweringTest(unittest.TestCase):
             rows=[{"season": 2023, "avg_epa": 0.12}],
         )
 
-        prompt = render_answer_question_prompt(
+        prompt = _render_answer_question_prompt(
             "How did the Bills offense perform?",
             decision,
             result,
@@ -57,7 +57,7 @@ class AnsweringTest(unittest.TestCase):
             data_not_needed_reason="Local play data does not include injuries.",
         )
 
-        prompt = render_answer_question_prompt(
+        prompt = _render_answer_question_prompt(
             "Is the quarterback injured?",
             decision,
             None,

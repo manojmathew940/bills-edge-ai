@@ -1,4 +1,5 @@
 import os
+from typing import Any
 
 from pydantic import BaseModel, Field
 from fastapi import FastAPI, HTTPException
@@ -7,24 +8,39 @@ from fastapi.staticfiles import StaticFiles
 
 from app.analytics.game_metrics import (
     calculate_game_metrics,
-    get_game_from_question,
     get_game_by_week,
 )
+from app.analytics.sql_execution import (
+    DEFAULT_SQL_ROW_LIMIT,
+    AnalyticsSqlResult,
+    validate_and_execute_analytics_sql,
+)
+from app.analytics.sql_views import AnalyticsViewError
 from app.llm.answering import (
     LLMConfigurationError,
     LLMServiceError,
-    answer_direct_question,
-    answer_game_question,
-    build_answer_direct_debug_payload,
-    build_answer_game_debug_payload,
+    answer_question,
+    build_answer_debug_payload,
 )
-from app.llm.planning import build_planner_debug_payload, run_planner_llm
+from app.llm.data_extraction import (
+    DataExtractionDecision,
+    build_data_extraction_debug_payload,
+    run_data_extraction_llm,
+)
 
 
 class AskRequest(BaseModel):
     season: int
     question: str = Field(min_length=1)
     provider: str = Field(default="local", pattern="^(openai|local)$")
+
+
+class AskResponse(BaseModel):
+    answer: str
+    provider: str
+    data_request: dict[str, Any]
+    analytics: dict[str, Any]
+    debug_payload: dict[str, Any] | None = None
 
 
 def is_llm_debug_enabled() -> bool:
@@ -35,28 +51,76 @@ def is_llm_debug_enabled() -> bool:
     )
 
 
-def build_request_planner_debug_payload(request: AskRequest) -> dict | None:
+def build_request_extraction_debug_payload(request: AskRequest) -> dict | None:
     if not is_llm_debug_enabled():
         return None
 
     return {
-        "planner": build_planner_debug_payload(request.question, provider=request.provider)
+        "data_extraction": build_data_extraction_debug_payload(
+            request.question,
+            provider=request.provider,
+        )
     }
 
 
-def build_request_llm_debug_payload(request: AskRequest, answer_payload: dict) -> dict | None:
+def build_request_answer_debug_payload(
+    request: AskRequest,
+    extraction_decision: DataExtractionDecision,
+    analytics_result: AnalyticsSqlResult | None,
+) -> dict | None:
     if not is_llm_debug_enabled():
         return None
 
     return {
-        "planner": build_planner_debug_payload(request.question, provider=request.provider),
-        "answer": answer_payload,
+        "data_extraction": build_data_extraction_debug_payload(
+            request.question,
+            provider=request.provider,
+        ),
+        "answer": build_answer_debug_payload(
+            request.question,
+            extraction_decision,
+            analytics_result,
+            provider=request.provider,
+        ),
     }
 
 
 def raise_llm_http_error(error: Exception, debug_payload: dict | None) -> None:
     detail = {"error": str(error), "debug_payload": debug_payload} if debug_payload else str(error)
     raise HTTPException(status_code=503, detail=detail) from error
+
+
+def build_analytics_payload(
+    sql: str | None,
+    analytics_result: AnalyticsSqlResult | None,
+    *,
+    row_limit: int = DEFAULT_SQL_ROW_LIMIT,
+) -> dict:
+    if analytics_result is None:
+        return {
+            "sql": sql,
+            "is_valid": None,
+            "validation_reason": None,
+            "columns": [],
+            "rows": [],
+            "row_limit": row_limit,
+        }
+
+    return {
+        "sql": sql,
+        "is_valid": analytics_result.is_valid,
+        "validation_reason": analytics_result.validation_reason,
+        "columns": analytics_result.columns,
+        "rows": analytics_result.rows,
+        "row_limit": row_limit,
+    }
+
+
+def build_invalid_sql_answer(validation_reason: str) -> str:
+    return (
+        "I could not query the local analytics data because the generated SQL "
+        f"failed validation: {validation_reason}"
+    )
 
 
 app = FastAPI(title="Bills AI Analyst")
@@ -80,70 +144,88 @@ def game_metrics(season: int, week: int):
     return calculate_game_metrics(game)
 
 
-@app.post("/ask")
+@app.post("/ask", response_model=AskResponse)
 def ask(request: AskRequest):
     try:
-        planner_decision = run_planner_llm(request.question, provider=request.provider)
+        extraction_decision = run_data_extraction_llm(
+            request.question,
+            provider=request.provider,
+        )
     except LLMConfigurationError as error:
-        raise_llm_http_error(error, build_request_planner_debug_payload(request))
+        raise_llm_http_error(error, build_request_extraction_debug_payload(request))
     except LLMServiceError as error:
-        raise_llm_http_error(error, build_request_planner_debug_payload(request))
+        raise_llm_http_error(error, build_request_extraction_debug_payload(request))
 
-    if planner_decision.requires_game_metrics:
-        try:
-            game = get_game_from_question(request.season, request.question)
-        except FileNotFoundError as error:
-            raise HTTPException(status_code=404, detail=str(error)) from error
-        except ValueError as error:
+    analytics_result = None
+    if extraction_decision.needs_data:
+        sql = extraction_decision.sql
+        if not sql:
             response = {
-                "answer": str(error),
-                "metrics": {},
+                "answer": build_invalid_sql_answer("SQL is empty."),
                 "provider": request.provider,
-                "plan": planner_decision.to_dict(),
+                "data_request": extraction_decision.to_dict(),
+                "analytics": build_analytics_payload(
+                    sql,
+                    AnalyticsSqlResult(
+                        is_valid=False,
+                        validation_reason="SQL is empty.",
+                        columns=[],
+                        rows=[],
+                    ),
+                ),
             }
-            debug_payload = build_request_planner_debug_payload(request)
+            debug_payload = build_request_extraction_debug_payload(request)
             if debug_payload:
                 response["debug_payload"] = debug_payload
             return response
 
-        metrics = calculate_game_metrics(game)
-        debug_payload = build_request_llm_debug_payload(
-            request,
-            build_answer_game_debug_payload(request.question, metrics, provider=request.provider),
-        )
-
         try:
-            answer = answer_game_question(request.question, metrics, provider=request.provider)
-        except LLMConfigurationError as error:
-            raise_llm_http_error(error, debug_payload)
-        except LLMServiceError as error:
-            raise_llm_http_error(error, debug_payload)
+            analytics_result = validate_and_execute_analytics_sql(
+                sql,
+                row_limit=DEFAULT_SQL_ROW_LIMIT,
+            )
+        except AnalyticsViewError as error:
+            raise_llm_http_error(error, build_request_extraction_debug_payload(request))
 
-        response = {
-            "answer": answer,
-            "metrics": metrics,
-            "provider": request.provider,
-            "plan": planner_decision.to_dict(),
-        }
-    else:
-        debug_payload = build_request_llm_debug_payload(
-            request,
-            build_answer_direct_debug_payload(request.question, provider=request.provider),
+        if not analytics_result.is_valid:
+            response = {
+                "answer": build_invalid_sql_answer(analytics_result.validation_reason),
+                "provider": request.provider,
+                "data_request": extraction_decision.to_dict(),
+                "analytics": build_analytics_payload(sql, analytics_result),
+            }
+            debug_payload = build_request_extraction_debug_payload(request)
+            if debug_payload:
+                response["debug_payload"] = debug_payload
+            return response
+
+    debug_payload = build_request_answer_debug_payload(
+        request,
+        extraction_decision,
+        analytics_result,
+    )
+
+    try:
+        answer = answer_question(
+            request.question,
+            extraction_decision,
+            analytics_result,
+            provider=request.provider,
         )
+    except LLMConfigurationError as error:
+        raise_llm_http_error(error, debug_payload)
+    except LLMServiceError as error:
+        raise_llm_http_error(error, debug_payload)
 
-        try:
-            answer = answer_direct_question(request.question, provider=request.provider)
-        except LLMConfigurationError as error:
-            raise_llm_http_error(error, debug_payload)
-        except LLMServiceError as error:
-            raise_llm_http_error(error, debug_payload)
-
-        response = {
-            "answer": answer,
-            "metrics": {},
-            "provider": request.provider,
-            "plan": planner_decision.to_dict(),
-        }
+    response = {
+        "answer": answer,
+        "provider": request.provider,
+        "data_request": extraction_decision.to_dict(),
+        "analytics": build_analytics_payload(
+            extraction_decision.sql,
+            analytics_result,
+        ),
+    }
 
     if debug_payload:
         response["debug_payload"] = debug_payload
