@@ -50,7 +50,7 @@ def is_llm_debug_enabled() -> bool:
         or os.getenv("BILLS_AI_DEBUG_PROMPT", "").lower() in enabled_values
     )
 
-
+#TODO: Think if this is required or if the AskResponse already covers this info
 def build_request_extraction_debug_payload(request: AskRequest) -> dict | None:
     if not is_llm_debug_enabled():
         return None
@@ -62,7 +62,7 @@ def build_request_extraction_debug_payload(request: AskRequest) -> dict | None:
         )
     }
 
-
+#TODO: Think if this is required or if the AskResponse already covers this info
 def build_request_answer_debug_payload(
     request: AskRequest,
     extraction_decision: DataExtractionDecision,

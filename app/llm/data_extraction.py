@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 import json
+import os
 from typing import Any
 
 from dotenv import load_dotenv
@@ -98,9 +99,12 @@ def run_data_extraction_llm(
             instructions=_EXTRACT_DATA_INSTRUCTIONS,
             input=prompt,
             max_output_tokens=_MAX_DATA_EXTRACTION_OUTPUT_TOKENS,
+            text={"format": {"type": "json_object"}},
         )
     except OpenAIError as error:
         raise LLMServiceError("The LLM data extractor failed to inspect the question.") from error
+
+    _print_data_extraction_response_debug(response)
 
     return _parse_data_extraction_decision(response.output_text)
 
@@ -200,4 +204,26 @@ def build_data_extraction_debug_payload(
         "instructions": _EXTRACT_DATA_INSTRUCTIONS,
         "input": _render_data_extraction_prompt(question),
         "max_output_tokens": _MAX_DATA_EXTRACTION_OUTPUT_TOKENS,
+        "text": {"format": {"type": "json_object"}},
     }
+
+
+def _is_terminal_llm_debug_enabled() -> bool:
+    enabled_values = {"1", "true", "yes", "on"}
+    return (
+        os.getenv("BILLS_AI_DEBUG_PAYLOAD", "").lower() in enabled_values
+        or os.getenv("BILLS_AI_DEBUG_PROMPT", "").lower() in enabled_values
+    )
+
+
+def _print_data_extraction_response_debug(response: Any) -> None:
+    if not _is_terminal_llm_debug_enabled():
+        return
+
+    print("\n=== LLM DATA EXTRACTION RAW RESPONSE TEXT ===")
+    print(getattr(response, "output_text", ""))
+
+    model_dump_json = getattr(response, "model_dump_json", None)
+    if callable(model_dump_json):
+        print("\n=== LLM DATA EXTRACTION FULL RESPONSE ===")
+        print(model_dump_json(indent=2))

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import Mock, patch
 
 from app.llm.answering import LLMServiceError
 from app.llm.data_extraction import (
     _EXTRACT_DATA_INSTRUCTIONS,
+    _print_data_extraction_response_debug,
     _parse_data_extraction_decision,
     _render_data_extraction_prompt,
+    run_data_extraction_llm,
 )
 
 
@@ -37,6 +40,40 @@ class DataExtractionTest(unittest.TestCase):
             "Example JSON when local data is not useful",
             _EXTRACT_DATA_INSTRUCTIONS,
         )
+
+    @patch("app.llm.data_extraction.get_llm_model", return_value="test-model")
+    @patch("app.llm.data_extraction.build_llm_client")
+    def test_run_data_extraction_requests_json_object(
+        self,
+        build_llm_client: Mock,
+        get_llm_model: Mock,
+    ) -> None:
+        response = Mock(
+            output_text=(
+                '{"needs_data": false, "sql": null, "reason": "No data needed.", '
+                '"confidence": 0.7, "data_not_needed_reason": "No local data needed."}'
+            )
+        )
+        client = Mock()
+        client.responses.create.return_value = response
+        build_llm_client.return_value = client
+
+        decision = run_data_extraction_llm("Who are the Bills?", provider="local")
+
+        self.assertFalse(decision.needs_data)
+        build_llm_client.assert_called_once_with("local")
+        get_llm_model.assert_called_once_with("local")
+        call_kwargs = client.responses.create.call_args.kwargs
+        self.assertEqual(call_kwargs["model"], "test-model")
+        self.assertEqual(call_kwargs["instructions"], _EXTRACT_DATA_INSTRUCTIONS)
+        self.assertEqual(call_kwargs["text"], {"format": {"type": "json_object"}})
+
+    @patch.dict("os.environ", {}, clear=True)
+    @patch("builtins.print")
+    def test_response_debug_print_is_disabled_by_default(self, print_mock: Mock) -> None:
+        _print_data_extraction_response_debug(Mock(output_text="{}"))
+
+        print_mock.assert_not_called()
 
     def test_parses_valid_data_request(self) -> None:
         decision = _parse_data_extraction_decision(
