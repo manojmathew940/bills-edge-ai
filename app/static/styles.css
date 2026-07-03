@@ -483,7 +483,8 @@ h3 {
 }
 
 .answer p:last-child,
-.answer ul:last-child {
+.answer ul:last-child,
+.answer-table-wrap:last-child {
   margin-bottom: 0;
 }
 
@@ -494,6 +495,41 @@ h3 {
 
 .answer li + li {
   margin-top: 7px;
+}
+
+.answer-table-wrap {
+  max-width: 100%;
+  margin: 0 0 14px;
+  overflow-x: auto;
+}
+
+.answer-table {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.answer-table th,
+.answer-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.answer-table th {
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.answer-table td:first-child,
+.answer-table th:first-child {
+  padding-left: 0;
 }
 
 .answer.empty {

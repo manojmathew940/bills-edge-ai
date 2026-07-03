@@ -257,19 +257,19 @@ columns:
     description: Player ID for the passer.
   passer_player_name:
     type: string
-    description: Player name for the passer.
+    description: Player name for the passer. Name format is first capital letter of first name, a period and the full last name with capital. So Josh Allen would be J.Allen 
   receiver_player_id:
     type: string
     description: Player ID for the targeted or credited receiver.
   receiver_player_name:
     type: string
-    description: Player name for the targeted or credited receiver.
+    description: Player name for the targeted or credited receiver. Name format is first capital letter of first name, a period and the full last name with capital. So Josh Allen would be J.Allen 
   rusher_player_id:
     type: string
     description: Player ID for the rusher.
   rusher_player_name:
     type: string
-    description: Player name for the rusher.
+    description: Player name for the rusher. Name format is first capital letter of first name, a period and the full last name with capital. So Josh Allen would be J.Allen 
   special_teams_play:
     type: integer
     description: Flag indicating a special teams play.
