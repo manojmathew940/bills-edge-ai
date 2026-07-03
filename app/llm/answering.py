@@ -19,27 +19,6 @@ DEFAULT_LOCAL_BASE_URL = "http://127.0.0.1:11434/v1"
 DEFAULT_LOCAL_MODEL = "qwen2.5:7b-instruct"
 MAX_ANSWER_OUTPUT_TOKENS = 900
 
-ANSWER_GAME_INSTRUCTIONS = """
-You are a Buffalo Bills football analyst.
-
-Answer the user's question using only the supplied game metrics.
-Do not invent plays, injuries, quotes, coaching comments, weather effects, or
-outside context that is not present in the metrics.
-
-If the metrics are not enough to answer the question, say what is missing.
-Be clear about direct evidence from the metrics versus interpretation.
-Keep the answer concise and specific.
-""".strip()
-
-ANSWER_DIRECT_INSTRUCTIONS = """
-You are a Buffalo Bills football analyst.
-
-Answer the user's question directly. Keep the answer concise and specific.
-If the question needs specific game, player, roster, injury, transaction, or
-news data that was not supplied, say what extra context is needed instead of
-guessing.
-""".strip()
-
 ANSWER_QUESTION_INSTRUCTIONS = """
 You are a Buffalo Bills football analyst.
 
@@ -50,6 +29,10 @@ the question can be answered without local data or current outside context.
 If the supplied data is empty or insufficient, say what is missing. Do not
 invent current news, injuries, quotes, roster moves, reporting, play details, or
 other context that was not provided.
+
+When the analytics result contains multiple rows with comparable columns,
+present the result as a Markdown table. Preserve the returned row ordering. Do
+not convert ranked or grouped result sets into prose lists.
 
 Be clear about direct evidence from the data versus interpretation. Keep the
 answer concise and specific.
@@ -146,63 +129,6 @@ def answer_question(
     return response.output_text
 
 
-def answer_game_question(
-    question: str,
-    metrics: dict[str, Any],
-    *,
-    provider: str | None = None,
-) -> str:
-    load_dotenv()
-
-    client = build_llm_client(provider)
-    prompt = render_answer_game_prompt(question, metrics)
-    model = get_llm_model(provider)
-
-    try:
-        response = client.responses.create(
-            model=model,
-            instructions=ANSWER_GAME_INSTRUCTIONS,
-            input=prompt,
-            max_output_tokens=MAX_ANSWER_OUTPUT_TOKENS,
-        )
-    except OpenAIError as error:
-        raise LLMServiceError("The LLM service failed to answer the question.") from error
-
-    return response.output_text
-
-
-def answer_direct_question(
-    question: str,
-    *,
-    provider: str | None = None,
-) -> str:
-    load_dotenv()
-
-    client = build_llm_client(provider)
-    model = get_llm_model(provider)
-
-    try:
-        response = client.responses.create(
-            model=model,
-            instructions=ANSWER_DIRECT_INSTRUCTIONS,
-            input=f"Question:\n{question}",
-            max_output_tokens=MAX_ANSWER_OUTPUT_TOKENS,
-        )
-    except OpenAIError as error:
-        raise LLMServiceError("The LLM service failed to answer the question.") from error
-
-    return response.output_text
-
-
-def render_answer_game_prompt(question: str, metrics: dict[str, Any]) -> str:
-    metrics_json = json.dumps(metrics, indent=2, sort_keys=True)
-    return (
-        f"Question:\n{question}\n\n"
-        "Game metrics JSON:\n"
-        f"{metrics_json}"
-    )
-
-
 def _render_answer_question_prompt(
     question: str,
     extraction_decision: DataExtractionDecision,
@@ -210,7 +136,6 @@ def _render_answer_question_prompt(
 ) -> str:
     _validate_answer_question_inputs(extraction_decision, analytics_result)
 
-    # Extraction decision is also added to prompt when analytics_result is None
     analytics_context_json = json.dumps(
         _renderable_analytics_context(extraction_decision, analytics_result),
         indent=2,
@@ -243,41 +168,6 @@ def build_answer_debug_payload(
             extraction_decision,
             analytics_result,
         ),
-        "max_output_tokens": MAX_ANSWER_OUTPUT_TOKENS,
-    }
-
-
-def build_answer_game_debug_payload(
-    question: str,
-    metrics: dict[str, Any],
-    *,
-    provider: str | None = None,
-) -> dict[str, Any]:
-    load_dotenv()
-
-    return {
-        "provider": provider or ("local" if get_llm_base_url() else "openai"),
-        "model": get_llm_model(provider),
-        "base_url": get_llm_base_url(provider),
-        "instructions": ANSWER_GAME_INSTRUCTIONS,
-        "input": render_answer_game_prompt(question, metrics),
-        "max_output_tokens": MAX_ANSWER_OUTPUT_TOKENS,
-    }
-
-
-def build_answer_direct_debug_payload(
-    question: str,
-    *,
-    provider: str | None = None,
-) -> dict[str, Any]:
-    load_dotenv()
-
-    return {
-        "provider": provider or ("local" if get_llm_base_url() else "openai"),
-        "model": get_llm_model(provider),
-        "base_url": get_llm_base_url(provider),
-        "instructions": ANSWER_DIRECT_INSTRUCTIONS,
-        "input": f"Question:\n{question}",
         "max_output_tokens": MAX_ANSWER_OUTPUT_TOKENS,
     }
 

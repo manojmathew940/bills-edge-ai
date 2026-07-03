@@ -33,14 +33,7 @@ Future extensions may include:
 ## Current Status
 
 The repo is currently a FastAPI application with data ingestion, processed
-play-level data, deterministic game metrics, a browser UI, and an initial
-LLM-backed `/ask` endpoint.
-
-The target architecture is changing from a planner-first flow to a
-data-extractor-first flow. Some code may still use the older planner concept
-during the migration, but future work should prioritize extractor-generated SQL,
-SQL validation, deterministic execution, and answer generation grounded in the
-returned rows.
+play-level data, a browser UI, and an LLM-backed `/ask` endpoint.
 
 ## Raw Data Ingestion
 
@@ -78,18 +71,12 @@ This reads the raw Bills play-by-play file and writes:
 data/processed/bills_plays_2024.parquet
 ```
 
-## Game Metrics
+## Run The App
 
 Start the API:
 
 ```bash
 uvicorn app.main:app --reload
-```
-
-Get deterministic game metrics for a Bills game:
-
-```bash
-curl http://localhost:8000/games/2024/1/metrics
 ```
 
 ## Ask A Question
@@ -103,8 +90,7 @@ The intended `/ask` workflow is data-extractor first:
    views.
 4. The app validates the SQL before execution.
 5. The app executes valid read-only SQL with row limits.
-6. The answer LLM receives the question, extractor decision, SQL metadata,
-   validation status, and returned rows.
+6. The answer LLM receives the question and returned local analytics rows.
 7. If no local data is needed or available, the answer LLM answers directly or
    says what context is missing.
 
@@ -241,7 +227,7 @@ Ask a question:
 ```bash
 curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
-  -d '{"season":2024,"question":"Why did the Bills beat the Cardinals?"}'
+  -d '{"question":"Why did the Bills beat the Cardinals?","provider":"local"}'
 ```
 
 In the target workflow, `/ask` first tries to extract useful local data. A
@@ -255,7 +241,7 @@ Example data-backed question:
 ```bash
 curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
-  -d '{"season":2024,"question":"Were the Bills better on offense in the first or second half?"}'
+  -d '{"question":"Were the Bills better on offense in the first or second half in 2024?","provider":"local"}'
 ```
 
 ### Inspect the LLM debug payload
@@ -269,7 +255,7 @@ BILLS_AI_DEBUG_PAYLOAD=1 uvicorn app.main:app --reload
 
 Then ask a question in the UI and expand **LLM Debug Payload**. The `/ask` JSON
 response should include a `debug_payload` object with the selected provider,
-model, instructions, rendered input, and token limit. As the extractor-first
-workflow is implemented, debug output should also make the extractor decision,
-generated SQL, validation result, and returned rows inspectable. The older
-`BILLS_AI_DEBUG_PROMPT=1` flag still works as a backward-compatible alias.
+model, instructions, rendered input, and token limit. The normal `/ask` response
+also includes `data_request` and `analytics` objects with the extractor
+decision, generated SQL, validation result, row limit, and returned rows. The
+older `BILLS_AI_DEBUG_PROMPT=1` flag still works as a backward-compatible alias.

@@ -9,14 +9,13 @@ from app.analytics.sql_execution import AnalyticsSqlResult
 from app.analytics.sql_views import AnalyticsViewError
 from app.llm.answering import LLMConfigurationError, LLMServiceError
 from app.llm.data_extraction import DataExtractionDecision
-from app.main import AskRequest, ask, game_metrics
+from app.main import AskRequest, ask
 
 
 class AskApiTest(unittest.TestCase):
     def ask(self, question: str = "How did the Bills perform?"):
         return ask(
             AskRequest(
-                season=2023,
                 question=question,
                 provider="local",
             )
@@ -227,24 +226,6 @@ class AskApiTest(unittest.TestCase):
 
         self.assertEqual(error.exception.status_code, 503)
         self.assertEqual(error.exception.detail, "Local analytics data is unavailable.")
-
-    @patch("app.main.calculate_game_metrics")
-    @patch("app.main.get_game_by_week")
-    def test_game_metrics_endpoint_remains_unchanged(
-        self,
-        get_game_by_week: Mock,
-        calculate_game_metrics: Mock,
-    ) -> None:
-        game = object()
-        metrics = {"game": {"season": 2023, "week": 1}}
-        get_game_by_week.return_value = game
-        calculate_game_metrics.return_value = metrics
-
-        response = game_metrics(2023, 1)
-
-        self.assertEqual(response, metrics)
-        get_game_by_week.assert_called_once_with(2023, 1)
-        calculate_game_metrics.assert_called_once_with(game)
 
 
 if __name__ == "__main__":

@@ -132,6 +132,7 @@ def run_data_extraction_llm(
         ) from error
 
     _print_data_extraction_response_debug(response)
+    _raise_if_response_incomplete(response)
 
     return _parse_data_extraction_decision(response.output_text)
 
@@ -255,3 +256,19 @@ def _print_data_extraction_response_debug(response: Any) -> None:
     if callable(model_dump_json):
         print("\n=== LLM DATA EXTRACTION FULL RESPONSE ===")
         print(model_dump_json(indent=2))
+
+
+def _raise_if_response_incomplete(response: Any) -> None:
+    incomplete_details = getattr(response, "incomplete_details", None)
+    if incomplete_details is None:
+        return
+
+    reason = getattr(incomplete_details, "reason", None)
+    if reason is None and isinstance(incomplete_details, dict):
+        reason = incomplete_details.get("reason")
+
+    if isinstance(reason, str) and reason:
+        raise LLMServiceError(
+            "The LLM data extractor returned an incomplete response "
+            f"before producing JSON. Reason: {reason}."
+        )

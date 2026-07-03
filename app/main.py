@@ -6,10 +6,6 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.analytics.game_metrics import (
-    calculate_game_metrics,
-    get_game_by_week,
-)
 from app.analytics.sql_execution import (
     DEFAULT_SQL_ROW_LIMIT,
     AnalyticsSqlResult,
@@ -30,7 +26,6 @@ from app.llm.data_extraction import (
 
 
 class AskRequest(BaseModel):
-    season: int
     question: str = Field(min_length=1)
     provider: str = Field(default="local", pattern="^(openai|local)$")
 
@@ -130,18 +125,6 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 @app.get("/")
 def root():
     return FileResponse("app/static/index.html")
-
-
-@app.get("/games/{season}/{week}/metrics")
-def game_metrics(season: int, week: int):
-    try:
-        game = get_game_by_week(season, week)
-    except FileNotFoundError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
-    except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
-
-    return calculate_game_metrics(game)
 
 
 @app.post("/ask", response_model=AskResponse)
