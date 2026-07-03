@@ -255,7 +255,6 @@ form.addEventListener("submit", async (event) => {
 
   const formData = new FormData(form);
   const payload = {
-    season: Number(formData.get("season")),
     question: String(formData.get("question")).trim(),
     provider: getSelectedProvider(),
   };
