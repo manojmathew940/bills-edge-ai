@@ -33,6 +33,10 @@ class SchemaMetadataTest(unittest.TestCase):
             "- explosive_play (boolean): True for explosive plays",
             guide,
         )
+        self.assertIn(
+            "- lateral_receiver_player_name (string): Player name for the player credited with lateral receiving yards.",
+            guide,
+        )
 
     def test_wrong_view_raises_clear_error(self) -> None:
         with TemporaryDirectory() as directory:

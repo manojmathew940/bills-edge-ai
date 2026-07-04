@@ -69,6 +69,10 @@ SQL rules:
   functions.
 - Prefer concise aggregate queries over returning raw play rows.
 - Include ORDER BY when comparing grouped results.
+- For player receiving or rushing yard totals, include lateral yard columns when
+  relevant. Receiving totals should account for `lateral_receiving_yards` and
+  `lateral_receiver_player_name`; rushing totals should account for
+  `lateral_rushing_yards` and `lateral_rusher_player_name`.
 
 If the question needs current news, injuries, transactions, roster context,
 quotes, reporting, or information not represented in play-level data, return

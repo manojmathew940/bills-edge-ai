@@ -45,6 +45,10 @@ class DataExtractionTest(unittest.TestCase):
             "Example JSON when local data is not useful",
             _EXTRACT_DATA_INSTRUCTIONS,
         )
+        self.assertIn("lateral_receiving_yards", _EXTRACT_DATA_INSTRUCTIONS)
+        self.assertIn("lateral_receiver_player_name", _EXTRACT_DATA_INSTRUCTIONS)
+        self.assertIn("lateral_rushing_yards", _EXTRACT_DATA_INSTRUCTIONS)
+        self.assertIn("lateral_rusher_player_name", _EXTRACT_DATA_INSTRUCTIONS)
 
     @patch("app.llm.data_extraction.get_llm_model", return_value="test-model")
     @patch("app.llm.data_extraction.build_llm_client")

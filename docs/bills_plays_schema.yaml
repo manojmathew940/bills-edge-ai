@@ -252,6 +252,30 @@ columns:
   rushing_yards:
     type: float
     description: Rushing yards credited on the play.
+  lateral_reception:
+    type: float
+    description: Flag indicating a lateral reception occurred on the play.
+  lateral_rush:
+    type: float
+    description: Flag indicating a lateral rush occurred on the play.
+  lateral_receiver_player_id:
+    type: string
+    description: Player ID for the player credited with lateral receiving yards.
+  lateral_receiver_player_name:
+    type: string
+    description: Player name for the player credited with lateral receiving yards.
+  lateral_receiving_yards:
+    type: float
+    description: Receiving yards credited to the lateral receiver on the play.
+  lateral_rusher_player_id:
+    type: string
+    description: Player ID for the player credited with lateral rushing yards.
+  lateral_rusher_player_name:
+    type: string
+    description: Player name for the player credited with lateral rushing yards.
+  lateral_rushing_yards:
+    type: float
+    description: Rushing yards credited to the lateral rusher on the play.
   passer_player_id:
     type: string
     description: Player ID for the passer.

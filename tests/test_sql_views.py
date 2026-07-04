@@ -58,6 +58,10 @@ class SqlViewsTest(unittest.TestCase):
                 "qtr",
                 "bills_on_offense",
                 "rushing_yards",
+                "lateral_receiver_player_name",
+                "lateral_receiving_yards",
+                "lateral_rusher_player_name",
+                "lateral_rushing_yards",
                 "epa",
             }.issubset(columns)
         )
