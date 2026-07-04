@@ -32,19 +32,19 @@ AND season_type = 'REG'
 AND receiver_player_name = 'K.Shakir'
 """
 
-# SQL = """
-# SELECT
-#   SUM(receiving_yards) AS receiving_yards,
-#   SUM(lateral_receiving_yards) AS lateral_receiving_yards,
-#   SUM(receiving_yards + COALESCE(lateral_receiving_yards, 0)) AS adjusted_receiving_yards
-# FROM bills_plays
-# WHERE season = 2025
-#   AND season_type = 'REG'
-#   AND (
-#     receiver_player_name = 'K.Shakir'
-#     OR lateral_receiver_player_name = 'K.Shakir'
-#   )
-# """
+SQL = """
+SELECT
+  SUM(receiving_yards) AS receiving_yards,
+  SUM(lateral_receiving_yards) AS lateral_receiving_yards,
+  SUM(receiving_yards + COALESCE(lateral_receiving_yards, 0)) AS adjusted_receiving_yards
+FROM bills_plays
+WHERE season = 2025
+  AND season_type = 'REG'
+  AND (
+    receiver_player_name = 'K.Shakir'
+    OR lateral_receiver_player_name = 'K.Shakir'
+  )
+"""
 
 def main() -> None:
     result = validate_and_execute_analytics_sql(SQL)
