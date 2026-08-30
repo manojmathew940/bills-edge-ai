@@ -73,7 +73,7 @@ def write_metadata(
         "source_url": source_url,
         "downloaded_at": datetime.now(timezone.utc).isoformat(),
         "season": season,
-        "team": "BUF",
+        "scope": "all_nfl",
         "output_path": str(output_path),
         "rows_written": rows_written,
         "source_column_count": source_column_count,
@@ -83,16 +83,16 @@ def write_metadata(
     metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
 
 
-def save_raw_bills_play_by_play(
+def save_raw_nfl_play_by_play(
     season: int, output_dir: Path = RAW_DATA_DIR
 ) -> tuple[Path, int]:
-    """Download one season and save raw play rows from Bills games."""
+    """Download and save every raw play from one NFL season."""
     validate_season(season)
 
     source_url = PBP_URL_TEMPLATE.format(season=season)
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"bills_play_by_play_{season}_raw.csv.gz"
-    metadata_path = output_dir / f"bills_play_by_play_{season}_raw.metadata.json"
+    output_path = output_dir / f"nfl_play_by_play_{season}_raw.csv.gz"
+    metadata_path = output_dir / f"nfl_play_by_play_{season}_raw.metadata.json"
 
     rows_written = 0
     with urlopen(source_url, timeout=60) as response:
@@ -114,9 +114,8 @@ def save_raw_bills_play_by_play(
                     writer.writeheader()
 
                     for row in reader:
-                        if row["home_team"] == "BUF" or row["away_team"] == "BUF":
-                            writer.writerow(row)
-                            rows_written += 1
+                        writer.writerow(row)
+                        rows_written += 1
 
                 temp_path.replace(output_path)
             finally:
@@ -137,17 +136,17 @@ def save_raw_bills_play_by_play(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Download raw Buffalo Bills play-by-play data for one NFL season."
+        description="Download raw play-by-play data for one NFL season."
     )
     parser.add_argument("season", type=int, help="NFL season to download, such as 2023")
     args = parser.parse_args()
 
     try:
-        output_path, rows_written = save_raw_bills_play_by_play(args.season)
+        output_path, rows_written = save_raw_nfl_play_by_play(args.season)
     except ValueError as error:
         parser.error(str(error))
 
-    print(f"Saved {rows_written} raw Bills play rows to {output_path}")
+    print(f"Saved {rows_written} raw NFL play rows to {output_path}")
 
 
 if __name__ == "__main__":

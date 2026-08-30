@@ -37,25 +37,29 @@ play-level data, a browser UI, and an LLM-backed `/ask` endpoint.
 
 ## Raw Data Ingestion
 
-Download raw Bills play-by-play rows for one season:
+Download every raw NFL play-by-play row for one season:
 
 ```bash
 python3 -m app.data_foundation.ingestion 2024
 ```
 
-This saves the filtered raw source columns to:
+This saves the complete raw season to:
 
 ```text
-data/raw/bills_play_by_play_2024_raw.csv.gz
+data/raw/nfl_play_by_play_2024_raw.csv.gz
 ```
 
 The script also writes a metadata file next to the raw data:
 
 ```text
-data/raw/bills_play_by_play_2024_raw.metadata.json
+data/raw/nfl_play_by_play_2024_raw.metadata.json
 ```
 
 The raw data is intentionally saved before normalization so the source columns can be inspected before deciding the analysis-ready schema mapping. The ingestion script validates the season range, checks required nflverse columns, limits the compressed source size, and only writes into `data/raw/`.
+
+The processed-data cleaner still reads the legacy Bills-only raw files during
+the staged NFL-wide migration. Support for processing the new NFL-wide raw file
+is added in the next migration step.
 
 ## Processed Play Data
 
