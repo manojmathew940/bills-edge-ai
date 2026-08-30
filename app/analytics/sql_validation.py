@@ -5,10 +5,10 @@ from dataclasses import dataclass
 from sqlglot import exp, parse
 from sqlglot.errors import ParseError
 
-from app.analytics.sql_views import BILLS_PLAYS_VIEW
+from app.analytics.sql_views import NFL_PLAYS_VIEW
 
 
-APPROVED_ANALYTICS_VIEWS = {BILLS_PLAYS_VIEW}
+APPROVED_ANALYTICS_VIEWS = {NFL_PLAYS_VIEW}
 BLOCKED_EXPRESSIONS = (
     exp.Alter,
     exp.Attach,

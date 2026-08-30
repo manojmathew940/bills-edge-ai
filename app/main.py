@@ -41,8 +41,8 @@ class AskResponse(BaseModel):
 def is_llm_debug_enabled() -> bool:
     enabled_values = {"1", "true", "yes", "on"}
     return (
-        os.getenv("BILLS_AI_DEBUG_PAYLOAD", "").lower() in enabled_values
-        or os.getenv("BILLS_AI_DEBUG_PROMPT", "").lower() in enabled_values
+        os.getenv("NFL_AI_DEBUG_PAYLOAD", "").lower() in enabled_values
+        or os.getenv("NFL_AI_DEBUG_PROMPT", "").lower() in enabled_values
     )
 
 #TODO: Think if this is required or if the AskResponse already covers this info
@@ -118,7 +118,7 @@ def build_invalid_sql_answer(validation_reason: str) -> str:
     )
 
 
-app = FastAPI(title="Bills AI Analyst")
+app = FastAPI(title="NFL AI Analyst")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 

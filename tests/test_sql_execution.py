@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
+import pyarrow as pa
 import pyarrow.parquet as pq
 
 from app.analytics.sql_execution import validate_and_execute_analytics_sql
 from app.analytics.sql_views import (
     AnalyticsViewError,
-    processed_play_paths,
     season_from_path,
 )
 
@@ -21,17 +23,43 @@ def expected_rows_by_season(paths: list[Path]) -> list[tuple[int, int]]:
 
 
 class SqlExecutionTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temp_directory = TemporaryDirectory()
+        self.paths = []
+        for season in (2023, 2024):
+            path = Path(self.temp_directory.name) / f"nfl_plays_{season}.parquet"
+            pq.write_table(
+                pa.table(
+                    {
+                        "season": [season, season],
+                        "play_id": [1, 2],
+                        "posteam": ["BUF", "ARI"],
+                        "epa": [0.1, -0.1],
+                    }
+                ),
+                path,
+            )
+            self.paths.append(path)
+        self.paths_patch = patch(
+            "app.analytics.sql_views.processed_play_paths",
+            return_value=self.paths,
+        )
+        self.paths_patch.start()
+
+    def tearDown(self) -> None:
+        self.paths_patch.stop()
+        self.temp_directory.cleanup()
+
     def test_validate_and_execute_analytics_sql_returns_json_safe_rows(self) -> None:
         result = validate_and_execute_analytics_sql(
             "SELECT season, COUNT(*) AS rows "
-            "FROM bills_plays "
+            "FROM nfl_plays "
             "GROUP BY season "
             "ORDER BY season"
         )
-        paths = processed_play_paths()
         expected_rows = [
             {"season": season, "rows": rows}
-            for season, rows in expected_rows_by_season(paths)
+            for season, rows in expected_rows_by_season(self.paths)
         ]
 
         self.assertTrue(result.is_valid)
@@ -41,7 +69,7 @@ class SqlExecutionTest(unittest.TestCase):
 
     def test_validate_and_execute_analytics_sql_applies_row_limit(self) -> None:
         result = validate_and_execute_analytics_sql(
-            "SELECT play_id FROM bills_plays ORDER BY season, play_id",
+            "SELECT play_id FROM nfl_plays ORDER BY season, play_id",
             row_limit=3,
         )
 
@@ -52,7 +80,7 @@ class SqlExecutionTest(unittest.TestCase):
             validate_and_execute_analytics_sql("SELECT 1", row_limit=0)
 
     def test_validate_and_execute_analytics_sql_rejects_invalid_sql(self) -> None:
-        result = validate_and_execute_analytics_sql("DROP TABLE bills_plays")
+        result = validate_and_execute_analytics_sql("DROP TABLE nfl_plays")
 
         self.assertFalse(result.is_valid)
         self.assertIn("SELECT", result.validation_reason)

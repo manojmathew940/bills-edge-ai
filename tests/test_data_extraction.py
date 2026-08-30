@@ -30,7 +30,7 @@ class DataExtractionTest(unittest.TestCase):
             "Do not reference columns that are not listed in the schema.",
             prompt,
         )
-        self.assertIn("Approved view: bills_plays", prompt)
+        self.assertIn("Approved view: nfl_plays", prompt)
         self.assertIn("- season (integer): NFL season.", prompt)
         self.assertIn(
             "- passer_player_name (string): Player name for the passer.",
@@ -40,6 +40,9 @@ class DataExtractionTest(unittest.TestCase):
         self.assertNotIn("Example JSON when data is useful", prompt)
 
     def test_instructions_include_extraction_examples(self) -> None:
+        self.assertIn("NFL analytics app", _EXTRACT_DATA_INSTRUCTIONS)
+        self.assertIn("posteam = 'BUF'", _EXTRACT_DATA_INSTRUCTIONS)
+        self.assertNotIn("bills_on_offense", _EXTRACT_DATA_INSTRUCTIONS)
         self.assertIn("Example JSON when data is useful", _EXTRACT_DATA_INSTRUCTIONS)
         self.assertIn(
             "Example JSON when local data is not useful",
@@ -111,7 +114,7 @@ class DataExtractionTest(unittest.TestCase):
             """
             {
               "needs_data": true,
-              "sql": "SELECT season, COUNT(*) AS plays FROM bills_plays GROUP BY season ORDER BY season",
+              "sql": "SELECT season, COUNT(*) AS plays FROM nfl_plays GROUP BY season ORDER BY season",
               "reason": "The question asks for play counts by season.",
               "confidence": 0.8,
               "data_not_needed_reason": null
@@ -122,7 +125,7 @@ class DataExtractionTest(unittest.TestCase):
         self.assertTrue(decision.needs_data)
         self.assertEqual(
             decision.sql,
-            "SELECT season, COUNT(*) AS plays FROM bills_plays GROUP BY season ORDER BY season",
+            "SELECT season, COUNT(*) AS plays FROM nfl_plays GROUP BY season ORDER BY season",
         )
         self.assertEqual(decision.reason, "The question asks for play counts by season.")
         self.assertEqual(decision.confidence, 0.8)
@@ -155,7 +158,7 @@ class DataExtractionTest(unittest.TestCase):
             """```json
             {
               "needs_data": true,
-              "sql": "SELECT 1 FROM bills_plays",
+              "sql": "SELECT 1 FROM nfl_plays",
               "reason": "Test query.",
               "confidence": 1,
               "data_not_needed_reason": null
@@ -164,7 +167,7 @@ class DataExtractionTest(unittest.TestCase):
         )
 
         self.assertTrue(decision.needs_data)
-        self.assertEqual(decision.sql, "SELECT 1 FROM bills_plays")
+        self.assertEqual(decision.sql, "SELECT 1 FROM nfl_plays")
 
     def test_clamps_confidence(self) -> None:
         high = _parse_data_extraction_decision(
@@ -213,7 +216,7 @@ class DataExtractionTest(unittest.TestCase):
             """
             {
               "needs_data": false,
-              "sql": "SELECT * FROM bills_plays",
+              "sql": "SELECT * FROM nfl_plays",
               "reason": "No data needed.",
               "confidence": 0.5,
               "data_not_needed_reason": "The question can be answered directly."
@@ -229,7 +232,7 @@ class DataExtractionTest(unittest.TestCase):
             """
             {
               "needs_data": "false",
-              "sql": "SELECT * FROM bills_plays",
+              "sql": "SELECT * FROM nfl_plays",
               "reason": "String boolean.",
               "confidence": 0.5,
               "data_not_needed_reason": "No local data needed."

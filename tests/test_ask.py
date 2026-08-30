@@ -10,6 +10,7 @@ from app.analytics.sql_views import AnalyticsViewError
 from app.llm.answering import LLMConfigurationError, LLMServiceError
 from app.llm.data_extraction import DataExtractionDecision
 from app.main import AskRequest, ask
+from app.main import app
 
 
 class AskApiTest(unittest.TestCase):
@@ -20,6 +21,9 @@ class AskApiTest(unittest.TestCase):
                 provider="local",
             )
         )
+
+    def test_application_uses_nfl_title(self) -> None:
+        self.assertEqual(app.title, "NFL AI Analyst")
 
     @patch.dict("os.environ", {}, clear=True)
     @patch("app.main.answer_question", return_value="A direct answer.")
@@ -78,7 +82,7 @@ class AskApiTest(unittest.TestCase):
         validate_and_execute_analytics_sql: Mock,
         answer_question: Mock,
     ) -> None:
-        sql = "SELECT season, AVG(epa) AS avg_epa FROM bills_plays GROUP BY season"
+        sql = "SELECT season, AVG(epa) AS avg_epa FROM nfl_plays GROUP BY season"
         decision = DataExtractionDecision(
             needs_data=True,
             sql=sql,
@@ -128,7 +132,7 @@ class AskApiTest(unittest.TestCase):
         validate_and_execute_analytics_sql: Mock,
         answer_question: Mock,
     ) -> None:
-        sql = "DROP TABLE bills_plays"
+        sql = "DROP TABLE nfl_plays"
         decision = DataExtractionDecision(
             needs_data=True,
             sql=sql,
@@ -208,7 +212,7 @@ class AskApiTest(unittest.TestCase):
         run_data_extraction_llm: Mock,
         validate_and_execute_analytics_sql: Mock,
     ) -> None:
-        sql = "SELECT COUNT(*) AS plays FROM bills_plays"
+        sql = "SELECT COUNT(*) AS plays FROM nfl_plays"
         decision = DataExtractionDecision(
             needs_data=True,
             sql=sql,

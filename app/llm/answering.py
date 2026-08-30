@@ -20,7 +20,7 @@ DEFAULT_LOCAL_MODEL = "qwen2.5:7b-instruct"
 MAX_ANSWER_OUTPUT_TOKENS = 900
 
 ANSWER_QUESTION_INSTRUCTIONS = """
-You are a Buffalo Bills football analyst.
+You are an NFL football analyst.
 
 Answer the user's question using only the supplied local analytics data when it
 is present. If no local analytics data was requested, answer directly only when

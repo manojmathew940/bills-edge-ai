@@ -5,10 +5,10 @@ from typing import Any
 
 import yaml
 
-from app.analytics.sql_views import BILLS_PLAYS_VIEW
+from app.analytics.sql_views import NFL_PLAYS_VIEW
 
 
-_SCHEMA_METADATA_PATH = Path("docs/bills_plays_schema.yaml")
+_SCHEMA_METADATA_PATH = Path("docs/nfl_plays_schema.yaml")
 
 
 class SchemaMetadataError(RuntimeError):
@@ -28,21 +28,21 @@ def _load_schema_metadata(path: Path = _SCHEMA_METADATA_PATH) -> dict[str, Any]:
 
 def _validate_schema_metadata(schema: dict[str, Any]) -> None:
     view_name = schema.get("view")
-    if view_name != BILLS_PLAYS_VIEW:
+    if view_name != NFL_PLAYS_VIEW:
         raise SchemaMetadataError(
-            f"Schema metadata must define view: {BILLS_PLAYS_VIEW}"
+            f"Schema metadata must define view: {NFL_PLAYS_VIEW}"
         )
 
     columns = schema.get("columns")
     if not isinstance(columns, dict) or not columns:
         raise SchemaMetadataError(
-            f"Schema metadata for {BILLS_PLAYS_VIEW} has no columns."
+            f"Schema metadata for {NFL_PLAYS_VIEW} has no columns."
         )
 
     for column_name, metadata in columns.items():
         if not isinstance(metadata, dict):
             raise SchemaMetadataError(
-                f"Schema metadata for {BILLS_PLAYS_VIEW}.{column_name} is invalid."
+                f"Schema metadata for {NFL_PLAYS_VIEW}.{column_name} is invalid."
             )
 
 
@@ -61,7 +61,7 @@ def render_view_schema_guide() -> str:
     columns = schema["columns"]
 
     lines = [
-        f"Approved view: {BILLS_PLAYS_VIEW}",
+        f"Approved view: {NFL_PLAYS_VIEW}",
         f"Description: {description}",
         f"Grain: {grain}",
         "",

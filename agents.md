@@ -1,12 +1,14 @@
 # Agents Instructions
 
 ## Project Overview
-This repository contains the "Bills AI Analyst" project.
+This repository contains the "NFL AI Analyst" project.
 
-The goal is to build an AI-assisted system that analyzes Buffalo Bills games and explains outcomes using structured data, validated queries, reasoning, and clear explanations.
+The goal is to build an AI-assisted system that analyzes NFL teams, players,
+games, and situations using structured data, validated queries, reasoning, and
+clear explanations.
 
 The AI-assisted system will:
-•	Answer questions like: Why did the Bills lose this game? What changed after halftime? Which three factors mattered most? Which drives and plays support that claim?
+•	Answer questions like: What was a team's EPA in a specific situation? What changed after halftime? Which three factors mattered most? Which drives and plays support that claim?
 •	Return structured evidence rather than just prose: generated SQL, validation status, result rows, ranked reasons, supporting metrics, key drives, key plays, charts, and eventually retrieved recap snippets.
 •	Allow drilldown from season to game to drive to play, so the user can inspect the evidence rather than trust a black-box answer.
 

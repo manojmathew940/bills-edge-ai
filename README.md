@@ -1,21 +1,21 @@
-# Bills AI Analyst
+# NFL AI Analyst
 
-This project is a Buffalo Bills-focused AI backend that is intended to combine:
+This project is an NFL analytics backend that combines:
 
-- structured game analytics
-- optional retrieval from Bills-related sources
+- league-wide structured game analytics
+- optional retrieval from NFL-related sources
 - LLM-powered explanation generation
 
 The goal is to answer questions such as:
 
-- Why did the Bills lose game X?
-- Why did they take 8 sacks?
-- Would more blitzing have helped?
-- What would have helped them win?
+- What was Kansas City's EPA on third-and-long in the fourth quarter?
+- Which offenses were most successful in the red zone?
+- How did Josh Allen perform against a specific defensive team?
+- Which plays had the largest effect on a game's win probability?
 
 The long-term direction is to support a data-grounded architecture where:
 
-1. Bills game data is ingested and cleaned into an analysis-ready dataset.
+1. NFL game data is ingested and cleaned into analysis-ready datasets.
 2. A data extractor LLM decides whether local analytics data can help answer a
    question.
 3. The extractor may generate SQL against approved analytics views.
@@ -26,8 +26,9 @@ The long-term direction is to support a data-grounded architecture where:
 
 Future extensions may include:
 
-- comparing web search vs. RAG for Bills-specific questions
-- adding a Bills draft assistant
+- adding weekly player and team statistics
+- comparing web search vs. RAG for NFL context
+- adding roster and draft analysis
 - exposing the system through a website and API
 
 ## Current Status
@@ -57,10 +58,6 @@ data/raw/nfl_play_by_play_2024_raw.metadata.json
 
 The raw data is intentionally saved before normalization so the source columns can be inspected before deciding the analysis-ready schema mapping. The ingestion script validates the season range, checks required nflverse columns, limits the compressed source size, and only writes into `data/raw/`.
 
-The processed-data cleaner still reads the legacy Bills-only raw files during
-the staged NFL-wide migration. Support for processing the new NFL-wide raw file
-is added in the next migration step.
-
 ## Processed Play Data
 
 Create the first curated play-level dataset for a season:
@@ -69,10 +66,10 @@ Create the first curated play-level dataset for a season:
 python3 -m app.data_foundation.cleaning 2024
 ```
 
-This reads the raw Bills play-by-play file and writes:
+This reads the raw NFL play-by-play file and writes:
 
 ```text
-data/processed/bills_plays_2024.parquet
+data/processed/nfl_plays_2024.parquet
 ```
 
 ## Run The App
@@ -231,7 +228,7 @@ Ask a question:
 ```bash
 curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
-  -d '{"question":"Why did the Bills beat the Cardinals?","provider":"local"}'
+  -d '{"question":"How efficient was Kansas City on third-and-long in the fourth quarter?","provider":"local"}'
 ```
 
 In the target workflow, `/ask` first tries to extract useful local data. A
@@ -245,7 +242,7 @@ Example data-backed question:
 ```bash
 curl -X POST http://localhost:8000/ask \
   -H "Content-Type: application/json" \
-  -d '{"question":"Were the Bills better on offense in the first or second half in 2024?","provider":"local"}'
+  -d '{"question":"Which teams had the highest offensive EPA per play in 2024?","provider":"local"}'
 ```
 
 ### Inspect the LLM debug payload
@@ -254,7 +251,7 @@ To include the LLM call details in `/ask` responses and show them in the browser
 UI, start the app with debug payloads enabled:
 
 ```bash
-BILLS_AI_DEBUG_PAYLOAD=1 uvicorn app.main:app --reload
+NFL_AI_DEBUG_PAYLOAD=1 uvicorn app.main:app --reload
 ```
 
 Then ask a question in the UI and expand **LLM Debug Payload**. The `/ask` JSON
@@ -262,4 +259,4 @@ response should include a `debug_payload` object with the selected provider,
 model, instructions, rendered input, and token limit. The normal `/ask` response
 also includes `data_request` and `analytics` objects with the extractor
 decision, generated SQL, validation result, row limit, and returned rows. The
-older `BILLS_AI_DEBUG_PROMPT=1` flag still works as a backward-compatible alias.
+`NFL_AI_DEBUG_PROMPT=1` is also supported.

@@ -20,7 +20,7 @@ class AnsweringTest(unittest.TestCase):
     def test_render_prompt_includes_valid_sql_result(self) -> None:
         decision = DataExtractionDecision(
             needs_data=True,
-            sql="SELECT season, AVG(epa) AS avg_epa FROM bills_plays GROUP BY season",
+            sql="SELECT season, AVG(epa) AS avg_epa FROM nfl_plays GROUP BY season",
             reason="The question asks for an EPA trend.",
             confidence=0.8,
             data_not_needed_reason=None,
@@ -49,6 +49,7 @@ class AnsweringTest(unittest.TestCase):
         self.assertNotIn("validation_reason", prompt)
 
     def test_instructions_prefer_tables_for_multi_row_results(self) -> None:
+        self.assertIn("NFL football analyst", ANSWER_QUESTION_INSTRUCTIONS)
         self.assertIn("Markdown table", ANSWER_QUESTION_INSTRUCTIONS)
         self.assertIn("Preserve the returned row ordering", ANSWER_QUESTION_INSTRUCTIONS)
         self.assertIn("ranked or grouped result sets", ANSWER_QUESTION_INSTRUCTIONS)
@@ -97,7 +98,7 @@ class AnsweringTest(unittest.TestCase):
     def test_missing_result_when_data_needed_raises_before_llm_call(self) -> None:
         decision = DataExtractionDecision(
             needs_data=True,
-            sql="SELECT COUNT(*) AS plays FROM bills_plays",
+            sql="SELECT COUNT(*) AS plays FROM nfl_plays",
             reason="The question asks for local data.",
             confidence=0.7,
             data_not_needed_reason=None,
