@@ -36,6 +36,23 @@ Future extensions may include:
 The repo is currently a FastAPI application with data ingestion, processed
 play-level data, a browser UI, and an LLM-backed `/ask` endpoint.
 
+## Request Architecture
+
+The current request path uses two LLM calls, with deterministic SQL validation
+and query execution between them:
+
+```mermaid
+flowchart LR
+    Question[Question] --> Extract[SQL extraction LLM]
+    Extract --> Guardrails[Python SQL validation]
+    Guardrails --> Data[(DuckDB and Parquet)]
+    Data --> Answer[Answer LLM]
+    Answer --> Response[Grounded response]
+```
+
+See [Request Architecture](docs/architecture.md) for the complete request flow,
+component responsibilities, data boundaries, and failure paths.
+
 ## Raw Data Ingestion
 
 Download every raw NFL play-by-play row for one season:
@@ -119,7 +136,7 @@ OPENAI_API_KEY=your_api_key
 Optionally override the model:
 
 ```text
-LLM_MODEL=gpt-5.5
+OPENAI_LLM_MODEL=gpt-5.5
 ```
 
 The internal UI can switch between both providers per request. For that mode,
@@ -135,7 +152,7 @@ LOCAL_LLM_API_KEY=ollama
 
 ### Ollama
 
-Install Ollama, download a local model, and start the local server:
+Install Ollama, download a local model, and start it:
 
 ```bash
 ollama run qwen2.5:7b-instruct
@@ -150,78 +167,15 @@ ollama serve
 Configure the app to call Ollama's OpenAI-compatible local endpoint:
 
 ```text
-LLM_BASE_URL=http://127.0.0.1:11434/v1
-LLM_MODEL=qwen2.5:7b-instruct
-LLM_API_KEY=ollama
-```
-
-The older `LLM_*` variables still work as a single-provider configuration, but
-the provider toggle prefers the `OPENAI_*` and `LOCAL_LLM_*` variables above so
-both providers can stay configured at once.
-
-`LLM_API_KEY` is a placeholder for Ollama. The local server does not require a real API key, but the OpenAI client expects one.
-
-#### Ollama on Windows, app in WSL
-
-If Ollama runs on Windows while this FastAPI app runs inside WSL, the most
-stable setup is to make WSL and Windows share `localhost` through WSL mirrored
-networking. That lets this project keep using:
-
-```text
 LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
+LOCAL_LLM_MODEL=qwen2.5:7b-instruct
+LOCAL_LLM_API_KEY=ollama
 ```
 
-One-time Windows setup:
-
-1. Create or edit `%UserProfile%\.wslconfig`:
-
-   ```ini
-   [wsl2]
-   networkingMode=mirrored
-   ```
-
-2. Restart WSL from PowerShell:
-
-   ```powershell
-   wsl --shutdown
-   ```
-
-3. Start Ollama from the Windows Start menu and keep the project-local values
-   in `.env`:
-
-   ```text
-   LOCAL_LLM_BASE_URL=http://127.0.0.1:11434/v1
-   LOCAL_LLM_MODEL=qwen2.5:7b-instruct
-   LOCAL_LLM_API_KEY=ollama
-   ```
-
-After that, the app loads `.env` automatically and no per-session export
-commands are required.
-
-If mirrored networking is unavailable on your Windows version, use WSL's
-default NAT mode instead:
-
-1. On Windows, set a persistent user environment variable:
-
-   ```text
-   OLLAMA_HOST=0.0.0.0:11434
-   ```
-
-2. Quit and restart the Ollama Windows app.
-3. From WSL, get the Windows host IP with:
-
-   ```bash
-   ip route show | grep -i default | awk '{ print $3 }'
-   ```
-
-4. Put that IP into `.env`, for example:
-
-   ```text
-   LOCAL_LLM_BASE_URL=http://172.30.96.1:11434/v1
-   ```
-
-Mirrored networking is preferred because the NAT-mode host IP can change after
-WSL restarts.
+`LOCAL_LLM_API_KEY` is a placeholder for Ollama. The local server does not
+require a real API key, but the OpenAI client expects one. See
+[Local LLM Setup](docs/local_llm_setup.md) for the complete configuration and
+Windows/WSL networking guidance.
 
 Ask a question:
 
@@ -245,18 +199,11 @@ curl -X POST http://localhost:8000/ask \
   -d '{"question":"Which teams had the highest offensive EPA per play in 2024?","provider":"local"}'
 ```
 
-### Inspect the LLM debug payload
+## Documentation
 
-To include the LLM call details in `/ask` responses and show them in the browser
-UI, start the app with debug payloads enabled:
-
-```bash
-NFL_AI_DEBUG_PAYLOAD=1 uvicorn app.main:app --reload
-```
-
-Then ask a question in the UI and expand **LLM Debug Payload**. The `/ask` JSON
-response should include a `debug_payload` object with the selected provider,
-model, instructions, rendered input, and token limit. The normal `/ask` response
-also includes `data_request` and `analytics` objects with the extractor
-decision, generated SQL, validation result, row limit, and returned rows. The
-`NFL_AI_DEBUG_PROMPT=1` is also supported.
+- [Request architecture](docs/architecture.md)
+- [NFL plays data guide](docs/data_schema.md)
+- [NFL plays machine-readable schema](docs/nfl_plays_schema.yaml)
+- [Local LLM and Ollama setup](docs/local_llm_setup.md)
+- [LLM debugging](docs/debugging.md)
+- [Project roadmap](docs/roadmap.md)
