@@ -12,38 +12,15 @@ from app.analytics.sql_execution import validate_and_execute_analytics_sql
 SQL = """
 SELECT
     season,
-    SUM(passing_yards) AS fourth_quarter_passing_yards,
-    COUNT(DISTINCT game_id) AS games,
-    ROUND(SUM(passing_yards) / COUNT(DISTINCT game_id), 1) AS fourth_quarter_passing_yards_per_game
-FROM bills_plays
-WHERE passer_player_name = 'J.Allen'
-AND season_type = 'REG'
-AND qtr = 4
+    ROUND(AVG(epa), 3) AS epa_per_play,
+    COUNT(*) AS plays
+FROM nfl_plays
+WHERE posteam = 'KC'
+  AND down = 3
+  AND ydstogo >= 7
+  AND qtr = 4
 GROUP BY season
 ORDER BY season
-"""
-
-SQL = """
-SELECT 
-    SUM(receiving_yards) AS receiving_yards 
-FROM bills_plays 
-WHERE season = 2025 
-AND season_type = 'REG' 
-AND receiver_player_name = 'K.Shakir'
-"""
-
-SQL = """
-SELECT
-  SUM(receiving_yards) AS receiving_yards,
-  SUM(lateral_receiving_yards) AS lateral_receiving_yards,
-  SUM(receiving_yards + COALESCE(lateral_receiving_yards, 0)) AS adjusted_receiving_yards
-FROM bills_plays
-WHERE season = 2025
-  AND season_type = 'REG'
-  AND (
-    receiver_player_name = 'K.Shakir'
-    OR lateral_receiver_player_name = 'K.Shakir'
-  )
 """
 
 def main() -> None:

@@ -1,6 +1,6 @@
-view: bills_plays
-description: Cleaned Buffalo Bills play-level analytics view built from nflverse play-by-play data.
-grain: One row per play from a Buffalo Bills game.
+view: nfl_plays
+description: Cleaned league-wide NFL play-level analytics view built from nflverse play-by-play data.
+grain: One row per play from an NFL game.
 approved_for_llm_sql: true
 columns:
   season:
@@ -417,36 +417,6 @@ columns:
   qb_epa:
     type: float
     description: Quarterback expected points added on the play.
-  opponent:
-    type: string
-    description: Opponent team abbreviation from the Bills perspective.
-  is_home:
-    type: boolean
-    description: True when Buffalo was the home team.
-  bills_on_offense:
-    type: boolean
-    description: True when Buffalo was the possession team.
-  bills_on_defense:
-    type: boolean
-    description: True when Buffalo was the defensive team.
-  bills_score_before:
-    type: integer
-    description: Buffalo score before the play.
-  opponent_score_before:
-    type: integer
-    description: Opponent score before the play.
-  bills_score_after:
-    type: integer
-    description: Buffalo score after the play.
-  opponent_score_after:
-    type: integer
-    description: Opponent score after the play.
-  bills_score_diff_before:
-    type: integer
-    description: Buffalo score differential before the play.
-  bills_score_diff_after:
-    type: integer
-    description: Buffalo score differential after the play.
   turnover:
     type: boolean
     description: True when the play produced an interception or lost fumble.

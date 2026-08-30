@@ -15,20 +15,21 @@ class SchemaMetadataTest(unittest.TestCase):
     def test_load_validated_schema_metadata_loads_columns(self) -> None:
         view = _load_validated_schema_metadata()
 
-        self.assertEqual(view["view"], "bills_plays")
-        self.assertEqual(view["grain"], "One row per play from a Buffalo Bills game.")
+        self.assertEqual(view["view"], "nfl_plays")
+        self.assertEqual(view["grain"], "One row per play from an NFL game.")
         self.assertIn("season", view["columns"])
         self.assertIn("explosive_play", view["columns"])
 
     def test_render_view_schema_guide_includes_columns(self) -> None:
         guide = render_view_schema_guide()
 
-        self.assertIn("Approved view: bills_plays", guide)
+        self.assertIn("Approved view: nfl_plays", guide)
         self.assertIn("- season (integer): NFL season.", guide)
         self.assertIn(
-            "- bills_on_offense (boolean): True when Buffalo was the possession team.",
+            "- posteam (string): Team in possession on the play.",
             guide,
         )
+        self.assertNotIn("bills_on_offense", guide)
         self.assertIn(
             "- explosive_play (boolean): True for explosive plays",
             guide,
@@ -61,7 +62,7 @@ columns:
             path = Path(directory) / "schema.yaml"
             path.write_text(
                 """
-view: bills_plays
+view: nfl_plays
 description: Test view.
 grain: Test grain.
 columns:
@@ -69,7 +70,7 @@ columns:
 """.strip()
             )
 
-            with self.assertRaisesRegex(SchemaMetadataError, "bills_plays.season"):
+            with self.assertRaisesRegex(SchemaMetadataError, "nfl_plays.season"):
                 _load_validated_schema_metadata(path)
 
     def test_missing_file_raises_clear_error(self) -> None:

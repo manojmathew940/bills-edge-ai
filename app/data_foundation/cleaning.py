@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 
 RAW_DATA_DIR = Path("data/raw")
 PROCESSED_DATA_DIR = Path("data/processed")
-BILLS_TEAM = "BUF"
 
 SOURCE_COLUMNS = [
     "season",
@@ -151,16 +151,18 @@ SOURCE_COLUMNS = [
 
 
 def raw_path_for_season(season: int, raw_dir: Path = RAW_DATA_DIR) -> Path:
-    return raw_dir / f"bills_play_by_play_{season}_raw.csv.gz"
+    return raw_dir / f"nfl_play_by_play_{season}_raw.csv.gz"
 
 
 def processed_path_for_season(
     season: int, processed_dir: Path = PROCESSED_DATA_DIR
 ) -> Path:
-    return processed_dir / f"bills_plays_{season}.parquet"
+    return processed_dir / f"nfl_plays_{season}.parquet"
 
 
-def load_raw_bills_play_by_play(season: int) -> pd.DataFrame:
+def load_raw_nfl_play_by_play(
+    season: int, raw_dir: Path = RAW_DATA_DIR
+) -> pd.DataFrame:
     try:
         import pandas as pd
     except ModuleNotFoundError as error:
@@ -169,7 +171,7 @@ def load_raw_bills_play_by_play(season: int) -> pd.DataFrame:
             "`python3 -m pip install -r requirements.txt`."
         ) from error
 
-    raw_path = raw_path_for_season(season)
+    raw_path = raw_path_for_season(season, raw_dir)
     if not raw_path.exists():
         raise FileNotFoundError(f"Missing raw data file: {raw_path}")
 
@@ -177,51 +179,20 @@ def load_raw_bills_play_by_play(season: int) -> pd.DataFrame:
 
 
 def select_source_columns(play_by_play: pd.DataFrame) -> pd.DataFrame:
-    available_columns = [
-        column for column in SOURCE_COLUMNS if column in play_by_play.columns
+    missing_columns = [
+        column for column in SOURCE_COLUMNS if column not in play_by_play.columns
     ]
-    return play_by_play.loc[:, available_columns].copy()
+    if missing_columns:
+        raise ValueError(
+            "Raw play-by-play data is missing required processed columns: "
+            + ", ".join(missing_columns)
+        )
+
+    return play_by_play.loc[:, SOURCE_COLUMNS].copy()
 
 
-def add_bills_perspective_fields(play_by_play: pd.DataFrame) -> pd.DataFrame:
+def add_derived_fields(play_by_play: pd.DataFrame) -> pd.DataFrame:
     play_by_play = play_by_play.sort_values(["game_id", "play_id"]).copy()
-
-    play_by_play["opponent"] = play_by_play.apply(
-        lambda row: row["away_team"] if row["home_team"] == BILLS_TEAM else row["home_team"],
-        axis=1,
-    )
-    play_by_play["is_home"] = play_by_play["home_team"] == BILLS_TEAM
-    play_by_play["bills_on_offense"] = play_by_play["posteam"] == BILLS_TEAM
-    play_by_play["bills_on_defense"] = play_by_play["defteam"] == BILLS_TEAM
-
-    bills_home = play_by_play["home_team"] == BILLS_TEAM
-    home_score_after = play_by_play["total_home_score"]
-    away_score_after = play_by_play["total_away_score"]
-    home_score_before = home_score_after.groupby(play_by_play["game_id"]).shift(
-        fill_value=0
-    )
-    away_score_before = away_score_after.groupby(play_by_play["game_id"]).shift(
-        fill_value=0
-    )
-
-    play_by_play["bills_score_before"] = home_score_before.where(
-        bills_home, away_score_before
-    )
-    play_by_play["opponent_score_before"] = away_score_before.where(
-        bills_home, home_score_before
-    )
-    play_by_play["bills_score_after"] = home_score_after.where(
-        bills_home, away_score_after
-    )
-    play_by_play["opponent_score_after"] = away_score_after.where(
-        bills_home, home_score_after
-    )
-    play_by_play["bills_score_diff_before"] = (
-        play_by_play["bills_score_before"] - play_by_play["opponent_score_before"]
-    )
-    play_by_play["bills_score_diff_after"] = (
-        play_by_play["bills_score_after"] - play_by_play["opponent_score_after"]
-    )
 
     play_by_play["turnover"] = (
         play_by_play[["interception", "fumble_lost"]].fillna(0).astype(int).sum(axis=1)
@@ -237,18 +208,34 @@ def add_bills_perspective_fields(play_by_play: pd.DataFrame) -> pd.DataFrame:
     return play_by_play
 
 
-def clean_bills_play_by_play(season: int) -> pd.DataFrame:
-    raw_play_by_play = load_raw_bills_play_by_play(season)
+def clean_nfl_play_by_play(
+    season: int, raw_dir: Path = RAW_DATA_DIR
+) -> pd.DataFrame:
+    raw_play_by_play = load_raw_nfl_play_by_play(season, raw_dir)
     processed_play_by_play = select_source_columns(raw_play_by_play)
-    return add_bills_perspective_fields(processed_play_by_play)
+    return add_derived_fields(processed_play_by_play)
 
 
-def save_processed_bills_play_by_play(season: int) -> tuple[Path, int, int]:
-    processed_play_by_play = clean_bills_play_by_play(season)
+def save_processed_nfl_play_by_play(
+    season: int,
+    raw_dir: Path = RAW_DATA_DIR,
+    processed_dir: Path = PROCESSED_DATA_DIR,
+) -> tuple[Path, int, int]:
+    processed_play_by_play = clean_nfl_play_by_play(season, raw_dir)
 
-    PROCESSED_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = processed_path_for_season(season)
-    processed_play_by_play.to_parquet(output_path, index=False)
+    processed_dir.mkdir(parents=True, exist_ok=True)
+    output_path = processed_path_for_season(season, processed_dir)
+    with NamedTemporaryFile(
+        "wb", dir=processed_dir, prefix=f".{output_path.stem}.", delete=False
+    ) as temp_file:
+        temp_path = Path(temp_file.name)
+
+    try:
+        processed_play_by_play.to_parquet(temp_path, index=False)
+        temp_path.replace(output_path)
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
 
     row_count, column_count = processed_play_by_play.shape
 
@@ -257,16 +244,16 @@ def save_processed_bills_play_by_play(season: int) -> tuple[Path, int, int]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Create processed Bills play-level data for one NFL season."
+        description="Create processed NFL play-level data for one season."
     )
     parser.add_argument("season", type=int, help="NFL season to process, such as 2024")
     args = parser.parse_args()
 
     try:
-        output_path, row_count, column_count = save_processed_bills_play_by_play(
+        output_path, row_count, column_count = save_processed_nfl_play_by_play(
             args.season
         )
-    except (FileNotFoundError, RuntimeError) as error:
+    except (FileNotFoundError, RuntimeError, ValueError) as error:
         parser.error(str(error))
 
     print(f"Saved {row_count} rows and {column_count} columns to {output_path}")

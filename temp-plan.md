@@ -27,8 +27,7 @@ Make league-wide play-by-play the primary analytics source.
 6. Update SQL validation, schema metadata, prompts, tests, documentation, and
    UI language to use `nfl_plays`.
 7. Remove Bills-only assumptions such as `bills_on_offense`, `opponent`, and
-   `bills_score_before`. A temporary `bills_plays` compatibility view may be
-   retained during migration, but it should not remain the primary surface.
+   `bills_score_before`. Do not retain a `bills_plays` compatibility view.
 
 Questions unlocked:
 

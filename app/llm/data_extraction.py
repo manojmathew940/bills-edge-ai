@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from openai import OpenAIError
 
 from app.analytics.schema_metadata import render_view_schema_guide
-from app.analytics.sql_views import BILLS_PLAYS_VIEW
+from app.analytics.sql_views import NFL_PLAYS_VIEW
 from app.llm.answering import (
     LLMServiceError,
     build_llm_client,
@@ -47,11 +47,11 @@ _DATA_EXTRACTION_RESPONSE_FORMAT = {
 }
 
 _EXTRACT_DATA_INSTRUCTIONS = f"""
-You are a data extraction assistant for a Buffalo Bills analytics app.
+You are a data extraction assistant for an NFL analytics app.
 
 Your job is to decide whether local structured play data can help answer the
 user's question. If it can, write exactly one DuckDB SELECT query against the
-approved `{BILLS_PLAYS_VIEW}` view. If local data is not useful or not available
+approved `{NFL_PLAYS_VIEW}` view. If local data is not useful or not available
 for the question, do not write SQL.
 
 Do not answer the user's question.
@@ -63,7 +63,7 @@ Return only JSON with these fields:
 - data_not_needed_reason: string or null
 
 SQL rules:
-- Use only the `{BILLS_PLAYS_VIEW}` view.
+- Use only the `{NFL_PLAYS_VIEW}` view.
 - Return exactly one SELECT query.
 - Do not use INSERT, UPDATE, DELETE, DROP, CREATE, COPY, ATTACH, or file-reading
   functions.
@@ -81,7 +81,7 @@ needs_data=false and explain what local data is missing.
 Example JSON when data is useful:
 {{
   "needs_data": true,
-  "sql": "SELECT season, AVG(epa) AS avg_epa FROM {BILLS_PLAYS_VIEW} WHERE bills_on_offense = true GROUP BY season ORDER BY season",
+  "sql": "SELECT season, AVG(epa) AS avg_epa FROM {NFL_PLAYS_VIEW} WHERE posteam = 'BUF' GROUP BY season ORDER BY season",
   "reason": "The question asks for an offensive trend that can be answered from play-level EPA.",
   "confidence": 0.8,
   "data_not_needed_reason": null
@@ -244,8 +244,8 @@ def build_data_extraction_debug_payload(
 def _is_terminal_llm_debug_enabled() -> bool:
     enabled_values = {"1", "true", "yes", "on"}
     return (
-        os.getenv("BILLS_AI_DEBUG_PAYLOAD", "").lower() in enabled_values
-        or os.getenv("BILLS_AI_DEBUG_PROMPT", "").lower() in enabled_values
+        os.getenv("NFL_AI_DEBUG_PAYLOAD", "").lower() in enabled_values
+        or os.getenv("NFL_AI_DEBUG_PROMPT", "").lower() in enabled_values
     )
 
 
